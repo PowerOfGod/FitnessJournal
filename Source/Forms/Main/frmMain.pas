@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ToolWin, Vcl.Menus,
-  Data.DB, Vcl.Grids, Vcl.DBGrids, Vcl.StdCtrls, Vcl.ExtCtrls, frmClientEdit, frmVisitEdit;
+  Data.DB, Vcl.Grids, Vcl.DBGrids, Vcl.StdCtrls, Vcl.ExtCtrls, frmClientEdit, frmVisitEdit, frmSubscriptionEdit;
 
 type
   TformMain = class(TForm)
@@ -35,6 +35,7 @@ type
     StatusBar1: TStatusBar;
     procedure btnNewClientClick(Sender: TObject);
     procedure btnNewVisitClick(Sender: TObject);
+    procedure btnNewSubscriptionClick(Sender: TObject);
 
   private
     { Private declarations }
@@ -65,6 +66,21 @@ begin
     finally
       ClientForm.Free;
     end;
+end;
+
+procedure TformMain.btnNewSubscriptionClick(Sender: TObject);
+  var
+  SubscriptionForm : TfrmSubscriptionEdit1;
+begin
+  SubscriptionForm := TfrmSubscriptionEdit1.Create(Self);
+    try
+      if SubscriptionForm.ShowModal = mrOk then ShowMessage('Абонемент добавлен!');
+
+
+    finally
+      SubscriptionForm.Free;
+    end;
+
 end;
 
 procedure TformMain.btnNewVisitClick(Sender: TObject);

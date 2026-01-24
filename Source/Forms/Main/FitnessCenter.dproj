@@ -95,10 +95,6 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="frmMain.pas">
-            <Form>formMain</Form>
-            <FormType>dfm</FormType>
-        </DCCReference>
         <DCCReference Include="..\..\Core\AppConsts.pas"/>
         <DCCReference Include="..\Clients\frmClientEdit.pas">
             <Form>frmClientEdit1</Form>
@@ -106,6 +102,14 @@
         </DCCReference>
         <DCCReference Include="..\Visits\frmVisitEdit.pas">
             <Form>frmVisitEdit1</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="..\Subscriptions\frmSubscriptionEdit.pas">
+            <Form>frmSubscriptionEdit1</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="frmMain.pas">
+            <Form>formMain</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Base">

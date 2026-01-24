@@ -60,6 +60,7 @@ object formMain: TformMain
       Hint = #1053#1086#1074#1099#1081' '#1072#1073#1086#1085#1077#1084#1077#1085#1090
       Caption = 'btnNewSubscription'
       ImageIndex = 2
+      OnClick = btnNewSubscriptionClick
     end
     object ToolButton3: TToolButton
       Left = 85

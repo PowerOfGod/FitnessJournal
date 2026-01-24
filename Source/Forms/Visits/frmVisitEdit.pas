@@ -25,6 +25,8 @@ type
     procedure cbClientChange(Sender: TObject);
     procedure btnEntryClick(Sender: TObject);
     procedure btnExitClick(Sender: TObject);
+    procedure btnCancelClick(Sender: TObject);
+    procedure memoNotesChange(Sender: TObject);
 
 
 
@@ -97,6 +99,10 @@ begin
 end;
 
 
+
+
+
+
 procedure TfrmVisitEdit1.btnEntryClick(Sender: TObject);
 begin
   // Проверка: если НЕ выбран клиент ИЛИ НЕ выбран тренер
@@ -111,7 +117,7 @@ begin
   btnEntry.Enabled := False;
   btnExit.Enabled := True;
 
-  ShowMessage('Вы успешно зарегистрировались!');
+  ShowMessage('Вы успешно зарегистрировались!' + #13#10 + 'Клиент: ' + cbClient.Text + #13#10 + 'Тренер: ' + cbTrainer.Text);
 end;
 
 
@@ -128,6 +134,31 @@ begin
   end;
 
 
+
+end;
+
+procedure TfrmVisitEdit1.btnCancelClick(Sender: TObject);
+begin
+  // Очистка формы
+  cbClient.ItemIndex := -1;
+  cbTrainer.Text := '';
+  edtPhone.Text := '';
+  edtSubscription.Text := '';
+  memoNotes.Text := '';
+
+  // Сброс состояния
+  FIsEntryRegistered := False;
+  btnEntry.Enabled := True;
+  btnExit.Enabled := False;
+end;
+
+
+procedure TfrmVisitEdit1.memoNotesChange(Sender: TObject);
+begin
+   if memoNotes.MaxLength > 500 then
+   begin
+      ShowMessage('Вы превысили лимит символов!');
+   end;
 
 end;
 

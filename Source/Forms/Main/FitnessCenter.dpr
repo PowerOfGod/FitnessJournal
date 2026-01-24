@@ -2,10 +2,11 @@ program FitnessCenter;
 
 uses
   Vcl.Forms,
-  frmMain in 'frmMain.pas' {formMain},
   AppConsts in '..\..\Core\AppConsts.pas',
   frmClientEdit in '..\Clients\frmClientEdit.pas' {frmClientEdit1},
-  frmVisitEdit in '..\Visits\frmVisitEdit.pas' {frmVisitEdit1};
+  frmVisitEdit in '..\Visits\frmVisitEdit.pas' {frmVisitEdit1},
+  frmSubscriptionEdit in '..\Subscriptions\frmSubscriptionEdit.pas' {frmSubscriptionEdit1},
+  frmMain in 'frmMain.pas' {formMain};
 
 {$R *.res}
 
@@ -16,5 +17,7 @@ begin
   Application.CreateForm(TfrmClientEdit1, frmClientEdit1);
   Application.CreateForm(TfrmClientEdit1, frmClientEdit1);
   Application.CreateForm(TfrmVisitEdit1, frmVisitEdit1);
+  Application.CreateForm(TfrmSubscriptionEdit1, frmSubscriptionEdit1);
+  Application.CreateForm(TformMain, formMain);
   Application.Run;
 end.

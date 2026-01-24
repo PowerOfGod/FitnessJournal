@@ -86,6 +86,7 @@ object frmVisitEdit1: TfrmVisitEdit1
     MaxLength = 500
     ScrollBars = ssVertical
     TabOrder = 3
+    OnChange = memoNotesChange
   end
   object btnEntry: TButton
     Left = 93
@@ -111,8 +112,8 @@ object frmVisitEdit1: TfrmVisitEdit1
     Width = 75
     Height = 25
     Caption = #1054#1090#1084#1077#1085#1072
-    ModalResult = 2
     TabOrder = 6
+    OnClick = btnCancelClick
   end
   object cbTrainer: TComboBox
     Left = 93
