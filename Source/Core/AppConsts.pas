@@ -14,15 +14,16 @@ const
   // ============================================
   // ПУТИ И ФАЙЛЫ (ИСПОЛЬЗУЕМ ПРЯМОЙ СЛЕШ ИЛИ БЕЗ СЛЕША НА КОНЦЕ)
   // ============================================
-  PATH_DATA = '.\Data';
-  PATH_DATABASE = '.\Data\Database';
-  PATH_IMAGES = '.\Data\Images';
-  PATH_BACKUP = '.\Data\Backup';
-  PATH_TEMPLATES = '.\Data\Templates';
+ // AppConsts.pas - исправленные пути
 
-  FILE_DATABASE = '.\Data\Database\FitnessCenter.db';
-  FILE_DB_TEMPLATE = '.\Data\Templates\DatabaseTemplate.sql';
+  // Используем PathDelim для кроссплатформенности
+  PATH_DATA = 'Data';
+  PATH_DATABASE = PATH_DATA + '\Database';
+  PATH_IMAGES = PATH_DATA + '\Images';
+  PATH_BACKUP = PATH_DATA + '\Backup';
+  PATH_TEMPLATES = PATH_DATA + '\Templates';
 
+  FILE_DATABASE = PATH_DATABASE + '\FitnessCenter.db';
   // ============================================
   // НАСТРОЙКИ БАЗЫ ДАННЫХ
   // ============================================

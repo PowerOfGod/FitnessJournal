@@ -46,15 +46,18 @@ implementation
 
 procedure TfrmSubscriptionEdit1.btnCancelClick(Sender: TObject);
 begin
- // Очистка формы
-  cbClient.ItemIndex := -1;
-  cbType.Text := '';
-  dtEndDate.Date := Date + 1;
-  edtPrice.Text  := '';
+  if MessageDlg('Отменить ввод данных?', mtConfirmation, [mbYes, mbNo], 0) = mrYes
+  then
+  begin
+    // Очистка формы
+    cbClient.ItemIndex := -1;
+    cbType.ItemIndex := -1;
+    edtPrice.Text := '';
+    dtStartDate.Date := Date;
+    dtEndDate.Date := Date + 30;
 
-
-
-
+    ModalResult := mrCancel;
+  end;
 
 end;
 
@@ -66,6 +69,9 @@ begin
     ShowMessage('Выберите клиента и абонемент!');
     Exit;
   end;
+
+
+
 
 
   ShowMessage('Вы успешно купили абонемент!' + #13#10 + 'Клиент: ' + cbClient.Text + #13#10 + 'Абонемент: ' + cbType.Text);
@@ -113,6 +119,8 @@ begin
 
 
   FClientID := 0;
+  edtPrice.ReadOnly := True;
+  edtPrice.Color := clBtnFace;
 
 
 

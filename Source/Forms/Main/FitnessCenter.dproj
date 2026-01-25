@@ -108,6 +108,7 @@
             <Form>frmSubscriptionEdit1</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="..\..\Database\DBModule.pas"/>
         <DCCReference Include="frmMain.pas">
             <Form>formMain</Form>
             <FormType>dfm</FormType>
@@ -1098,6 +1099,7 @@
             <Platforms>
                 <Platform value="Win32">True</Platform>
             </Platforms>
+            <ModelSupport>True</ModelSupport>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>
     </ProjectExtensions>

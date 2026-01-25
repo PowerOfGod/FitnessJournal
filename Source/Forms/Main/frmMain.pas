@@ -1,11 +1,11 @@
-unit frmMain;
+п»їunit frmMain;
 
 interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ToolWin, Vcl.Menus,
-  Data.DB, Vcl.Grids, Vcl.DBGrids, Vcl.StdCtrls, Vcl.ExtCtrls, frmClientEdit, frmVisitEdit, frmSubscriptionEdit;
+  Data.DB, Vcl.Grids, Vcl.DBGrids, Vcl.StdCtrls, Vcl.ExtCtrls, frmClientEdit, frmVisitEdit, frmSubscriptionEdit, DBModule, AppConsts;
 
 type
   TformMain = class(TForm)
@@ -33,9 +33,11 @@ type
     Button1: TButton;
     DBGrid1: TDBGrid;
     StatusBar1: TStatusBar;
+    btnTestDB: TButton;
     procedure btnNewClientClick(Sender: TObject);
     procedure btnNewVisitClick(Sender: TObject);
     procedure btnNewSubscriptionClick(Sender: TObject);
+
 
   private
     { Private declarations }
@@ -60,7 +62,7 @@ begin
     try
       if ClientForm.ShowModal = mrOk then
       begin
-        ShowMessage('Клиент сохранен!');
+        ShowMessage('РљР»РёРµРЅС‚ СЃРѕС…СЂР°РЅРµРЅ!');
       end;
 
     finally
@@ -74,7 +76,7 @@ procedure TformMain.btnNewSubscriptionClick(Sender: TObject);
 begin
   SubscriptionForm := TfrmSubscriptionEdit1.Create(Self);
     try
-      if SubscriptionForm.ShowModal = mrOk then ShowMessage('Абонемент добавлен!');
+      if SubscriptionForm.ShowModal = mrOk then ShowMessage('РђР±РѕРЅРµРјРµРЅС‚ РґРѕР±Р°РІР»РµРЅ!');
 
 
     finally
@@ -92,7 +94,7 @@ begin
 
         if VisitForm.ShowModal = mrOk then
         begin
-             ShowMessage('Посещение зарегистрировано!');
+             ShowMessage('РџРѕСЃРµС‰РµРЅРёРµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅРѕ!');
         end;
 
 
@@ -100,5 +102,7 @@ begin
         VisitForm.Free;
       end;
 end;
+
+
 
 end.

@@ -6,6 +6,7 @@ uses
   frmClientEdit in '..\Clients\frmClientEdit.pas' {frmClientEdit1},
   frmVisitEdit in '..\Visits\frmVisitEdit.pas' {frmVisitEdit1},
   frmSubscriptionEdit in '..\Subscriptions\frmSubscriptionEdit.pas' {frmSubscriptionEdit1},
+  DBModule in '..\..\Database\DBModule.pas',
   frmMain in 'frmMain.pas' {formMain};
 
 {$R *.res}
@@ -18,6 +19,7 @@ begin
   Application.CreateForm(TfrmClientEdit1, frmClientEdit1);
   Application.CreateForm(TfrmVisitEdit1, frmVisitEdit1);
   Application.CreateForm(TfrmSubscriptionEdit1, frmSubscriptionEdit1);
+  Application.CreateForm(TformMain, formMain);
   Application.CreateForm(TformMain, formMain);
   Application.Run;
 end.

@@ -173,6 +173,14 @@ object formMain: TformMain
       end
     end
   end
+  object btnTestDB: TButton
+    Left = 392
+    Top = 24
+    Width = 75
+    Height = 25
+    Caption = #1058#1077#1089#1090' '#1041#1044
+    TabOrder = 2
+  end
   object MainMenu1: TMainMenu
     Left = 304
     Top = 224
