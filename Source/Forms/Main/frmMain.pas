@@ -5,7 +5,10 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ToolWin, Vcl.Menus,
-  Data.DB, Vcl.Grids, Vcl.DBGrids, Vcl.StdCtrls, Vcl.ExtCtrls, frmClientEdit, frmVisitEdit, frmSubscriptionEdit, DBModule, AppConsts;
+  Data.DB, Vcl.Grids, Vcl.DBGrids, Vcl.StdCtrls, Vcl.ExtCtrls, frmClientEdit, frmVisitEdit, frmSubscriptionEdit, DBModule, AppConsts,
+  FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
+  FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf,
+  FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.Client;
 
 type
   TformMain = class(TForm)
@@ -34,13 +37,21 @@ type
     DBGrid1: TDBGrid;
     StatusBar1: TStatusBar;
     btnTestDB: TButton;
+    DataSource1: TDataSource;
+    FDQuery1: TFDQuery;
+    DBGridClients: TDBGrid;
     procedure btnNewClientClick(Sender: TObject);
     procedure btnNewVisitClick(Sender: TObject);
     procedure btnNewSubscriptionClick(Sender: TObject);
 
+    procedure FormCreate(Sender: TObject);    // ДОБАВИТЬ эту строку
+    procedure FormDestroy(Sender: TObject);   // ДОБАВИТЬ эту строку
+    procedure btnTestDBClick(Sender: TObject);
+
 
   private
     { Private declarations }
+    FDBPath: string;
   public
     { Public declarations }
   end;
@@ -50,24 +61,131 @@ var
 
 implementation
 
+
+
 {$R *.dfm}
 
 
+procedure TformMain.FormCreate(Sender: TObject);
+begin
+  // Теперь DB уже создан в initialization
+  FDBPath := 'D:\программирование\FitnessJournal\Data\Database\FitnessCenter.db';
+  // Автоматическое подключение (опционально)
+  // if DB.ConnectToDB(FDBPath) then
+  //   StatusBar1.Panels[0].Text := 'БД подключена';
+end;
+
+procedure TformMain.FormDestroy(Sender: TObject);
+begin
+  // Не нужно освобождать DB - это сделает finalization
+end;
+
+procedure TformMain.btnTestDBClick(Sender: TObject);
+var
+  TestPath: string;
+  OpenDialog: TOpenDialog;
+begin
+  // Показываем текущий путь
+  ShowMessage('Пытаюсь найти файл по пути:' + #13#10 + FDBPath);
+
+  // Проверяем несколько возможных путей
+  if FileExists(FDBPath) then
+  begin
+    ShowMessage('Файл найден! Пробую подключиться...');
+
+    // ВОТ ЭТО ГЛАВНОЕ - ПОДКЛЮЧАЕМСЯ!
+    if DB.ConnectToDB(FDBPath) then
+    begin
+      ShowMessage('✅ Подключение к базе данных успешно!');
+      StatusBar1.Panels[0].Text := 'Подключено: ' + ExtractFileName(FDBPath);
+      btnTestDB.Caption := 'Отключить БД';
+    end
+    else
+    begin
+      ShowMessage('❌ Не удалось подключиться к базе данных');
+    end;
+  end
+  else
+  begin
+    ShowMessage('Файл не найден. Проверяем альтернативные пути...');
+
+    // Проверяем в папке с программой
+    TestPath := ExtractFilePath(Application.ExeName) + 'Data\Database\FitnessCenter.db';
+    if FileExists(TestPath) then
+    begin
+      ShowMessage('Файл найден в папке программы: ' + TestPath);
+      FDBPath := TestPath;
+
+      // ПОДКЛЮЧАЕМСЯ!
+      if DB.ConnectToDB(FDBPath) then
+      begin
+        ShowMessage('✅ Подключение к базе данных успешно!');
+        StatusBar1.Panels[0].Text := 'Подключено: ' + ExtractFileName(FDBPath);
+        btnTestDB.Caption := 'Отключить БД';
+      end;
+    end
+    else
+    begin
+      TestPath := ExtractFilePath(Application.ExeName) + 'FitnessCenter.db';
+      if FileExists(TestPath) then
+      begin
+        ShowMessage('Файл найден рядом с программой: ' + TestPath);
+        FDBPath := TestPath;
+
+        // ПОДКЛЮЧАЕМСЯ!
+        if DB.ConnectToDB(FDBPath) then
+        begin
+          ShowMessage('✅ Подключение к базе данных успешно!');
+          StatusBar1.Panels[0].Text := 'Подключено: ' + ExtractFileName(FDBPath);
+          btnTestDB.Caption := 'Отключить БД';
+        end;
+      end
+      else
+      begin
+        ShowMessage('Файл не найден ни по одному из путей.' + #13#10 +
+                    'Проверьте:' + #13#10 +
+                    '1. Существование файла' + #13#10 +
+                    '2. Правильность имени файла' + #13#10 +
+                    '3. Разрешения на доступ к файлу');
+
+        // Открываем диалог для выбора файла
+        OpenDialog := TOpenDialog.Create(nil);
+        try
+          OpenDialog.Title := 'Выберите файл базы данных FitnessCenter.db';
+          OpenDialog.Filter := 'SQLite Database (*.db)|*.db|All Files (*.*)|*.*';
+          if OpenDialog.Execute then
+          begin
+            FDBPath := OpenDialog.FileName;
+            ShowMessage('Выбран новый путь: ' + FDBPath);
+
+            // ПОДКЛЮЧАЕМСЯ СРАЗУ ПОСЛЕ ВЫБОРА!
+            if DB.ConnectToDB(FDBPath) then
+            begin
+              ShowMessage('✅ Подключение к базе данных успешно!');
+              StatusBar1.Panels[0].Text := 'Подключено: ' + ExtractFileName(FDBPath);
+              btnTestDB.Caption := 'Отключить БД';
+            end
+            else
+            begin
+              ShowMessage('❌ Не удалось подключиться к выбранному файлу');
+            end;
+          end;
+        finally
+          OpenDialog.Free;
+        end;
+      end;
+    end;
+  end;
+end;
+
 
 procedure TformMain.btnNewClientClick(Sender: TObject);
-var
-  ClientForm : TfrmClientEdit1;
 begin
-    ClientForm := TfrmClientEdit1.Create(Self);
-    try
-      if ClientForm.ShowModal = mrOk then
-      begin
-        ShowMessage('Клиент сохранен!');
-      end;
-
-    finally
-      ClientForm.Free;
-    end;
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Сначала подключитесь к базе данных!');
+    Exit;
+  end;
 end;
 
 procedure TformMain.btnNewSubscriptionClick(Sender: TObject);
