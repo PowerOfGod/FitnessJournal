@@ -37,8 +37,8 @@ type
     DBGrid1: TDBGrid;
     StatusBar1: TStatusBar;
     btnTestDB: TButton;
-    DataSource1: TDataSource;
-    FDQuery1: TFDQuery;
+    DataSourceClients: TDataSource;
+    FDQueryClients: TFDQuery;
     DBGridClients: TDBGrid;
     procedure btnNewClientClick(Sender: TObject);
     procedure btnNewVisitClick(Sender: TObject);
@@ -47,8 +47,11 @@ type
     procedure FormCreate(Sender: TObject);    // ДОБАВИТЬ эту строку
     procedure FormDestroy(Sender: TObject);   // ДОБАВИТЬ эту строку
     procedure btnTestDBClick(Sender: TObject);
-
-
+    procedure LoadClients;
+    procedure btnRefreshClick(Sender: TObject);
+    procedure LoadSubscriptions;
+    procedure LoadVisits;
+    procedure PageControl1Change(Sender: TObject);
   private
     { Private declarations }
     FDBPath: string;
@@ -65,11 +68,56 @@ implementation
 
 {$R *.dfm}
 
+procedure TformMain.LoadClients;
+var
+  Query: TFDQuery;
+begin
+
+    if not DB.IsConnected then
+    begin
+        ShowMessage('Сначала подключитесь к базе данных!');
+    end;
+
+
+    try
+      Query := DB.GetClients;
+
+      FDQueryClients.Close;
+
+      FDQueryClients.Connection := DB.GetConnection;
+      FDQueryClients  .SQL.Text := 'SELECT * FROM clients ORDER BY full_name';
+      FDQueryClients.Open;
+
+      StatusBar1.Panels[1].Text := 'Клиентов: ' + IntToStr(FDQueryClients.RecordCount);
+
+    except
+    on E: Exception do
+    begin
+      ShowMessage('Ошибка загрузки клиентов: ' + E.Message);
+    end;
+    end;
+
+
+end;
+
+
+
+procedure TformMain.PageControl1Change(Sender: TObject);
+begin
+  if not DB.IsConnected then Exit;
+
+  case PageControl1.ActivePageIndex of
+    0: LoadClients;        // Клиенты
+    1: LoadSubscriptions;  // Абонементы
+    3: LoadVisits;         // Посещения
+  end;
+end;
 
 procedure TformMain.FormCreate(Sender: TObject);
 begin
   // Теперь DB уже создан в initialization
   FDBPath := 'D:\программирование\FitnessJournal\Data\Database\FitnessCenter.db';
+
   // Автоматическое подключение (опционально)
   // if DB.ConnectToDB(FDBPath) then
   //   StatusBar1.Panels[0].Text := 'БД подключена';
@@ -164,6 +212,8 @@ begin
               ShowMessage('✅ Подключение к базе данных успешно!');
               StatusBar1.Panels[0].Text := 'Подключено: ' + ExtractFileName(FDBPath);
               btnTestDB.Caption := 'Отключить БД';
+
+               LoadClients;
             end
             else
             begin
@@ -222,5 +272,37 @@ begin
 end;
 
 
+procedure TformMain.btnRefreshClick(Sender: TObject);
+begin
+  if PageControl1.ActivePage = tsClients then
+    LoadClients
+  else if PageControl1.ActivePage = tsSubscription then
+    LoadSubscriptions
+  else if PageControl1.ActivePage = tsVisits then
+    LoadVisits;
+  end;
+end.
+
+procedure TformMain.LoadSubscriptions;
+begin
+
+end;
+
+
+  procedure TformMain.LoadVisits;
+begin
+
+end;
+
+
+
+
+
+
+
+
 
 end.
+
+
+

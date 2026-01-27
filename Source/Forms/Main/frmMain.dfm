@@ -21,7 +21,7 @@ object formMain: TformMain
     ParentShowHint = False
     ShowHint = True
     TabOrder = 0
-    ExplicitWidth = 622
+    ExplicitTop = -6
     object btnNewClient: TToolButton
       Left = 0
       Top = 0
@@ -76,6 +76,7 @@ object formMain: TformMain
       Hint = #1054#1073#1085#1086#1074#1080#1090#1100
       Caption = 'btnRefresh'
       ImageIndex = 3
+      OnClick = btnRefreshClick
     end
   end
   object PageControl1: TPageControl
@@ -86,6 +87,7 @@ object formMain: TformMain
     ActivePage = tsClients
     Align = alClient
     TabOrder = 1
+    OnChange = PageControl1Change
     ExplicitWidth = 622
     ExplicitHeight = 432
     object tsClients: TTabSheet
@@ -96,7 +98,7 @@ object formMain: TformMain
         Width = 616
         Height = 407
         Align = alClient
-        DataSource = DataSource1
+        DataSource = DataSourceClients
         TabOrder = 0
         TitleFont.Charset = DEFAULT_CHARSET
         TitleFont.Color = clWindowText
@@ -208,12 +210,12 @@ object formMain: TformMain
       Caption = #1055#1086#1084#1086#1097#1100
     end
   end
-  object DataSource1: TDataSource
-    DataSet = FDQuery1
+  object DataSourceClients: TDataSource
+    DataSet = FDQueryClients
     Left = 188
     Top = 143
   end
-  object FDQuery1: TFDQuery
+  object FDQueryClients: TFDQuery
     Left = 340
     Top = 191
   end
