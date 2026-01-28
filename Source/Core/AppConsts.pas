@@ -2,6 +2,11 @@ unit AppConsts;
 
 interface
 
+uses
+  System.SysUtils;
+
+function GetDBPath: string;
+
 const
   // ============================================
   // »Õ‘Œ–Ã¿÷»ﬂ Œ œ–»ÀŒ∆≈Õ»»
@@ -24,6 +29,8 @@ const
   PATH_TEMPLATES = PATH_DATA + '\Templates';
 
   FILE_DATABASE = PATH_DATABASE + '\FitnessCenter.db';
+
+
   // ============================================
   // Õ¿—“–Œ… » ¡¿«€ ƒ¿ÕÕ€’
   // ============================================
@@ -53,5 +60,10 @@ const
   MSG_DB_ERROR = 'Œ¯Ë·Í‡ ·‡Á˚ ‰‡ÌÌ˚ı';
 
 implementation
+
+function GetDBPath: string;
+    begin
+      Result := ExtractFilePath(ParamStr(0)) + 'FitnessCenter.db';
+    end;
 
 end.

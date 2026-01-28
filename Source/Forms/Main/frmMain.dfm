@@ -2,8 +2,8 @@ object formMain: TformMain
   Left = 0
   Top = 0
   Caption = #1060#1080#1090#1085#1077#1089'-'#1094#1077#1085#1090#1088': '#1046#1091#1088#1085#1072#1083' '#1087#1086#1089#1077#1097#1077#1085#1080#1081
-  ClientHeight = 466
-  ClientWidth = 624
+  ClientHeight = 549
+  ClientWidth = 814
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -15,13 +15,13 @@ object formMain: TformMain
   object ToolBar1: TToolBar
     Left = 0
     Top = 0
-    Width = 624
+    Width = 814
     Height = 29
     Caption = 'ToolBar1'
     ParentShowHint = False
     ShowHint = True
     TabOrder = 0
-    ExplicitTop = -6
+    ExplicitWidth = 622
     object btnNewClient: TToolButton
       Left = 0
       Top = 0
@@ -76,18 +76,16 @@ object formMain: TformMain
       Hint = #1054#1073#1085#1086#1074#1080#1090#1100
       Caption = 'btnRefresh'
       ImageIndex = 3
-      OnClick = btnRefreshClick
     end
   end
   object PageControl1: TPageControl
     Left = 0
     Top = 29
-    Width = 624
-    Height = 437
+    Width = 814
+    Height = 520
     ActivePage = tsClients
     Align = alClient
     TabOrder = 1
-    OnChange = PageControl1Change
     ExplicitWidth = 622
     ExplicitHeight = 432
     object tsClients: TTabSheet
@@ -95,8 +93,8 @@ object formMain: TformMain
       object DBGridClients: TDBGrid
         Left = 0
         Top = 0
-        Width = 616
-        Height = 407
+        Width = 806
+        Height = 490
         Align = alClient
         DataSource = DataSourceClients
         TabOrder = 0
@@ -121,11 +119,13 @@ object formMain: TformMain
       object PanelVisits: TPanel
         Left = 0
         Top = 0
-        Width = 616
-        Height = 407
+        Width = 806
+        Height = 490
         Align = alClient
         Caption = 'PanelVisits'
         TabOrder = 0
+        ExplicitWidth = 616
+        ExplicitHeight = 407
         object Label1: TLabel
           Left = 19
           Top = 16
@@ -166,8 +166,8 @@ object formMain: TformMain
         end
         object StatusBar1: TStatusBar
           Left = 1
-          Top = 387
-          Width = 614
+          Top = 470
+          Width = 804
           Height = 19
           Panels = <
             item
@@ -181,6 +181,8 @@ object formMain: TformMain
             item
               Width = 50
             end>
+          ExplicitTop = 387
+          ExplicitWidth = 614
         end
       end
     end
