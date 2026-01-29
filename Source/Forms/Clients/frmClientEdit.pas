@@ -20,6 +20,10 @@ type
     Label5: TLabel;
     btnSaveClient: TButton;
     btnCancel: TButton;
+
+    procedure btnSaveClientClick(Sender: TObject);
+    procedure btnCancelClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
   public
@@ -32,5 +36,35 @@ var
 implementation
 
 {$R *.dfm}
+
+procedure TfrmClientEdit1.btnSaveClientClick(Sender: TObject);
+begin
+  if Trim(Edit1.Text) = '' then
+  begin
+    ShowMessage('Введите ФИО клиента!');
+    Edit1.SetFocus;
+    Exit;
+  end;
+
+  ModalResult := mrOk;
+end;
+
+
+
+procedure TfrmClientEdit1.btnCancelClick(Sender: TObject);
+begin
+  ModalResult := mrCancel;
+end;
+
+// В FormCreate инициализировать значения
+procedure TfrmClientEdit1.FormCreate(Sender: TObject);
+begin
+  DateTimePicker1.Date := Date;
+
+  ComboBox1.Items.Add('Разовый');
+  ComboBox1.Items.Add('Месячный');
+  ComboBox1.Items.Add('Годовой');
+  ComboBox1.ItemIndex := 0;
+end;
 
 end.

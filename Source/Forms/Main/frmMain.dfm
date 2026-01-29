@@ -21,7 +21,7 @@ object formMain: TformMain
     ParentShowHint = False
     ShowHint = True
     TabOrder = 0
-    ExplicitWidth = 622
+    ExplicitWidth = 812
     object btnNewClient: TToolButton
       Left = 0
       Top = 0
@@ -83,11 +83,11 @@ object formMain: TformMain
     Top = 29
     Width = 814
     Height = 520
-    ActivePage = tsClients
+    ActivePage = tsVisits
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 622
-    ExplicitHeight = 432
+    ExplicitWidth = 812
+    ExplicitHeight = 515
     object tsClients: TTabSheet
       Caption = #1050#1083#1080#1077#1085#1090#1099
       object DBGridClients: TDBGrid
@@ -108,6 +108,19 @@ object formMain: TformMain
     object tsSubscription: TTabSheet
       Caption = #1040#1073#1086#1085#1077#1084#1077#1085#1090#1099
       ImageIndex = 1
+      object DBGridSubscriptions: TDBGrid
+        Left = 0
+        Top = 0
+        Width = 806
+        Height = 490
+        Align = alClient
+        TabOrder = 0
+        TitleFont.Charset = DEFAULT_CHARSET
+        TitleFont.Color = clWindowText
+        TitleFont.Height = -12
+        TitleFont.Name = 'Segoe UI'
+        TitleFont.Style = []
+      end
     end
     object tsStatistics: TTabSheet
       Caption = #1057#1090#1072#1090#1080#1089#1090#1080#1082#1072
@@ -124,8 +137,8 @@ object formMain: TformMain
         Align = alClient
         Caption = 'PanelVisits'
         TabOrder = 0
-        ExplicitWidth = 616
-        ExplicitHeight = 407
+        ExplicitWidth = 804
+        ExplicitHeight = 485
         object Label1: TLabel
           Left = 19
           Top = 16
@@ -142,7 +155,7 @@ object formMain: TformMain
           Height = 23
           Date = 46045.000000000000000000
           Time = 0.425898599540232700
-          TabOrder = 0
+          TabOrder = 2
         end
         object Button1: TButton
           Left = 272
@@ -152,12 +165,13 @@ object formMain: TformMain
           Caption = #1055#1086#1082#1072#1079#1072#1090#1100
           TabOrder = 1
         end
-        object DBGrid1: TDBGrid
-          Left = 0
-          Top = 37
-          Width = 617
-          Height = 340
-          TabOrder = 2
+        object DBGridVisits: TDBGrid
+          Left = 1
+          Top = 1
+          Width = 804
+          Height = 469
+          Align = alClient
+          TabOrder = 0
           TitleFont.Charset = DEFAULT_CHARSET
           TitleFont.Color = clWindowText
           TitleFont.Height = -12
@@ -172,7 +186,7 @@ object formMain: TformMain
           Panels = <
             item
               Text = #1043#1086#1090#1086#1074
-              Width = 50
+              Width = 100
             end
             item
               Text = #1041#1044': '#1085#1077' '#1087#1086#1076#1082#1083#1102#1095#1077#1085#1072
@@ -181,8 +195,8 @@ object formMain: TformMain
             item
               Width = 50
             end>
-          ExplicitTop = 387
-          ExplicitWidth = 614
+          ExplicitTop = 465
+          ExplicitWidth = 802
         end
       end
     end
@@ -220,5 +234,23 @@ object formMain: TformMain
   object FDQueryClients: TFDQuery
     Left = 340
     Top = 191
+  end
+  object FDQuerySubscriptions: TFDQuery
+    Left = 500
+    Top = 191
+  end
+  object FDQueryVisits: TFDQuery
+    Left = 476
+    Top = 375
+  end
+  object DataSourceSubscriptions: TDataSource
+    DataSet = FDQuerySubscriptions
+    Left = 300
+    Top = 143
+  end
+  object DataSourceVisits: TDataSource
+    DataSet = FDQueryVisits
+    Left = 450
+    Top = 143
   end
 end

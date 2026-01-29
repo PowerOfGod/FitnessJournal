@@ -37,22 +37,31 @@ type
     Label1: TLabel;
     DateTimePicker1: TDateTimePicker;
     Button1: TButton;
-    DBGrid1: TDBGrid;
+    DBGridVisits: TDBGrid;
     StatusBar1: TStatusBar;
     btnTestDB: TButton;
     DataSourceClients: TDataSource;
     FDQueryClients: TFDQuery;
     DBGridClients: TDBGrid;
+    FDQuerySubscriptions: TFDQuery;
+    FDQueryVisits: TFDQuery;
+    DBGridSubscriptions: TDBGrid;
+    DataSourceSubscriptions: TDataSource;
+    DataSourceVisits: TDataSource;
     procedure btnNewClientClick(Sender: TObject);
     procedure btnNewVisitClick(Sender: TObject);
     procedure btnNewSubscriptionClick(Sender: TObject);    // ДОБАВИТЬ эту строку
     procedure FormDestroy(Sender: TObject);   // ДОБАВИТЬ эту строку
     procedure btnTestDBClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
     procedure LoadClients;
-//    procedure btnRefreshClick(Sender: TObject);
+    procedure LoadSubscription;
+    procedure LoadVisits;
+    procedure btnRefreshClick(Sender: TObject);
 ////    procedure LoadSubscriptions;
 ////    procedure LoadVisits;
-//    procedure PageControl1Change(Sender: TObject);
+    procedure PageControl1Change(Sender: TObject);
+    procedure LoadStatistics;
   private
     { Private declarations }
     FDBPath: string;
@@ -68,6 +77,34 @@ implementation
 
 
 {$R *.dfm}
+
+procedure TformMain.FormCreate(Sender: TObject);
+begin
+  // Инициализация
+  PageControl1.ActivePageIndex := 0;
+
+  // Привязать обработчик изменения вкладок
+  PageControl1.OnChange := PageControl1Change;
+
+  // Привязать обработчик кнопки Обновить
+  btnRefresh.OnClick := btnRefreshClick;
+
+  // Обновить статус
+  StatusBar1.Panels[0].Text := 'Готов';
+  StatusBar1.Panels[1].Text := 'БД: не подключена';
+end;
+
+procedure TformMain.LoadStatistics;
+begin
+  if not DB.IsConnected then Exit;
+
+  // Простая статистика
+  StatusBar1.Panels[2].Text :=
+    Format('Клиентов: %d | Абонементов: %d | Посещений: %d',
+      [FDQueryClients.RecordCount,
+       FDQuerySubscriptions.RecordCount,
+       FDQueryVisits.RecordCount]);
+end;
 
 procedure TformMain.LoadClients;
 var
@@ -120,20 +157,94 @@ FDQueryClients.FieldByName('membership_type').DisplayWidth := 20;
 end;
 
 
+procedure TformMain.LoadSubscription;
+begin
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Сначала подключитесь к базе данных!');
+    Exit;
+  end;
+
+  try
+    FDQuerySubscriptions.Close;
+    FDQuerySubscriptions.Connection := DB.GetConnection;
+
+    FDQuerySubscriptions.SQL.Text :=
+      'SELECT ' +
+      'id, ' +
+      'client_id, ' +
+      'subscription_type, ' +
+      'start_date, ' +
+      'end_date, ' +
+      'price, ' +
+      'visits_count, ' +
+      'remaining_visits, ' +
+      'is_active, ' +
+      'notes ' +
+      'FROM subscriptions ' +
+      'ORDER BY start_date DESC';
+
+    FDQuerySubscriptions.Open;
+
+    StatusBar1.Panels[1].Text :=
+      'Абонементов: ' + IntToStr(FDQuerySubscriptions.RecordCount);
+
+  except
+    on E: Exception do
+      ShowMessage('Ошибка загрузки абонементов: ' + E.Message);
+  end;
+end;
+
+procedure TformMain.LoadVisits;
+begin
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Сначала подключитесь к базе данных!');
+    Exit;
+  end;
+
+  try
+    FDQueryVisits.Close;
+    FDQueryVisits.Connection := DB.GetConnection;
+
+    FDQueryVisits.SQL.Text :=
+      'SELECT ' +
+      'v.id, ' +
+      'v.client_id, ' +
+      'c.full_name, ' +
+      'v.visit_date, ' +
+      'v.entry_time, ' +
+      'v.exit_time, ' +
+      'v.duration_minutes, ' +
+      'v.trainer_name, ' +
+      'v.notes ' +
+      'FROM visits v ' +
+      'LEFT JOIN clients c ON c.id = v.client_id ' +
+      'ORDER BY v.visit_date DESC, v.entry_time DESC';
+
+    FDQueryVisits.Open;
+
+    StatusBar1.Panels[1].Text :=
+      'Посещений: ' + IntToStr(FDQueryVisits.RecordCount);
+
+  except
+    on E: Exception do
+      ShowMessage('Ошибка загрузки посещений: ' + E.Message);
+  end;
+end;
 
 
 
-//procedure TformMain.PageControl1Change(Sender: TObject);
-//begin
-//  if not DB.IsConnected then Exit;
-//
-//  case PageControl1.ActivePageIndex of
-//    0: LoadClients;        // Клиенты
-//    1: LoadSubscriptions;  // Абонементы
-//    3: LoadVisits;         // Посещения
-//  end;
-//end;
+procedure TformMain.PageControl1Change(Sender: TObject);
+begin
+  if not DB.IsConnected then Exit;
 
+  case PageControl1.ActivePageIndex of
+    0: LoadClients;        // Клиенты
+    1: LoadSubscription;   // Абонементы
+    3: LoadVisits;         // Посещения
+  end;
+end;
 
 procedure TformMain.FormDestroy(Sender: TObject);
 begin
@@ -175,13 +286,27 @@ end;
 
 
 procedure TformMain.btnNewClientClick(Sender: TObject);
+var
+  ClientForm: TfrmClientEdit1;
 begin
   if not DB.IsConnected then
   begin
     ShowMessage('Сначала подключитесь к базе данных!');
     Exit;
   end;
+
+  ClientForm := TfrmClientEdit1.Create(Self);
+  try
+    if ClientForm.ShowModal = mrOk then
+    begin
+      ShowMessage('Клиент добавлен!');
+      LoadClients; // Обновить список клиентов
+    end;
+  finally
+    ClientForm.Free;
+  end;
 end;
+
 
 procedure TformMain.btnNewSubscriptionClick(Sender: TObject);
   var
@@ -217,16 +342,15 @@ begin
 end;
 
 
-//procedure TformMain.btnRefreshClick(Sender: TObject);
-//begin
-//  if PageControl1.ActivePage = tsClients then
-//    LoadClients
-//  else if PageControl1.ActivePage = tsSubscription then
-//    LoadSubscriptions
-//  else if PageControl1.ActivePage = tsVisits then
-//    LoadVisits;
-//  end;
-//end.
+procedure TformMain.btnRefreshClick(Sender: TObject);
+begin
+  if PageControl1.ActivePage = tsClients then
+    LoadClients
+  else if PageControl1.ActivePage = tsSubscription then
+    LoadSubscription
+  else if PageControl1.ActivePage = tsVisits then
+    LoadVisits;
+end;
 
 //procedure TformMain.LoadSubscriptions;
 //begin

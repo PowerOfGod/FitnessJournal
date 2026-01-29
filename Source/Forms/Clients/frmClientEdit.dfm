@@ -12,6 +12,7 @@ object frmClientEdit1: TfrmClientEdit1
   Font.Name = 'Segoe UI'
   Font.Style = []
   Position = poScreenCenter
+  OnCreate = FormCreate
   TextHeight = 15
   object Label1: TLabel
     Left = 88
