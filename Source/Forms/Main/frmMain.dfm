@@ -2,8 +2,8 @@ object formMain: TformMain
   Left = 0
   Top = 0
   Caption = #1060#1080#1090#1085#1077#1089'-'#1094#1077#1085#1090#1088': '#1046#1091#1088#1085#1072#1083' '#1087#1086#1089#1077#1097#1077#1085#1080#1081
-  ClientHeight = 549
-  ClientWidth = 814
+  ClientHeight = 596
+  ClientWidth = 956
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -11,17 +11,18 @@ object formMain: TformMain
   Font.Name = 'Segoe UI'
   Font.Style = []
   Menu = MainMenu1
+  OnCreate = FormCreate
   TextHeight = 15
   object ToolBar1: TToolBar
     Left = 0
     Top = 0
-    Width = 814
+    Width = 956
     Height = 29
     Caption = 'ToolBar1'
     ParentShowHint = False
     ShowHint = True
     TabOrder = 0
-    ExplicitWidth = 812
+    ExplicitWidth = 810
     object btnNewClient: TToolButton
       Left = 0
       Top = 0
@@ -81,13 +82,13 @@ object formMain: TformMain
   object PageControl1: TPageControl
     Left = 0
     Top = 29
-    Width = 814
-    Height = 520
+    Width = 956
+    Height = 567
     ActivePage = tsVisits
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 812
-    ExplicitHeight = 515
+    ExplicitWidth = 810
+    ExplicitHeight = 510
     object tsClients: TTabSheet
       Caption = #1050#1083#1080#1077#1085#1090#1099
       object DBGridClients: TDBGrid
@@ -108,19 +109,6 @@ object formMain: TformMain
     object tsSubscription: TTabSheet
       Caption = #1040#1073#1086#1085#1077#1084#1077#1085#1090#1099
       ImageIndex = 1
-      object DBGridSubscriptions: TDBGrid
-        Left = 0
-        Top = 0
-        Width = 806
-        Height = 490
-        Align = alClient
-        TabOrder = 0
-        TitleFont.Charset = DEFAULT_CHARSET
-        TitleFont.Color = clWindowText
-        TitleFont.Height = -12
-        TitleFont.Name = 'Segoe UI'
-        TitleFont.Style = []
-      end
     end
     object tsStatistics: TTabSheet
       Caption = #1057#1090#1072#1090#1080#1089#1090#1080#1082#1072
@@ -132,13 +120,13 @@ object formMain: TformMain
       object PanelVisits: TPanel
         Left = 0
         Top = 0
-        Width = 806
-        Height = 490
+        Width = 948
+        Height = 537
         Align = alClient
         Caption = 'PanelVisits'
         TabOrder = 0
-        ExplicitWidth = 804
-        ExplicitHeight = 485
+        ExplicitWidth = 802
+        ExplicitHeight = 480
         object Label1: TLabel
           Left = 19
           Top = 16
@@ -155,7 +143,7 @@ object formMain: TformMain
           Height = 23
           Date = 46045.000000000000000000
           Time = 0.425898599540232700
-          TabOrder = 2
+          TabOrder = 0
         end
         object Button1: TButton
           Left = 272
@@ -168,10 +156,11 @@ object formMain: TformMain
         object DBGridVisits: TDBGrid
           Left = 1
           Top = 1
-          Width = 804
-          Height = 469
+          Width = 946
+          Height = 516
           Align = alClient
-          TabOrder = 0
+          DataSource = DataSourceVisits
+          TabOrder = 2
           TitleFont.Charset = DEFAULT_CHARSET
           TitleFont.Color = clWindowText
           TitleFont.Height = -12
@@ -180,8 +169,8 @@ object formMain: TformMain
         end
         object StatusBar1: TStatusBar
           Left = 1
-          Top = 470
-          Width = 804
+          Top = 517
+          Width = 946
           Height = 19
           Panels = <
             item
@@ -195,8 +184,8 @@ object formMain: TformMain
             item
               Width = 50
             end>
-          ExplicitTop = 465
-          ExplicitWidth = 802
+          ExplicitTop = 460
+          ExplicitWidth = 800
         end
       end
     end

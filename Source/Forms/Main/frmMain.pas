@@ -45,7 +45,6 @@ type
     DBGridClients: TDBGrid;
     FDQuerySubscriptions: TFDQuery;
     FDQueryVisits: TFDQuery;
-    DBGridSubscriptions: TDBGrid;
     DataSourceSubscriptions: TDataSource;
     DataSourceVisits: TDataSource;
     procedure btnNewClientClick(Sender: TObject);
@@ -81,15 +80,13 @@ implementation
 procedure TformMain.FormCreate(Sender: TObject);
 begin
   // Инициализация
-  PageControl1.ActivePageIndex := 0;
+  FDBPath := '';
 
-  // Привязать обработчик изменения вкладок
+  // Привязываем обработчики
   PageControl1.OnChange := PageControl1Change;
-
-  // Привязать обработчик кнопки Обновить
   btnRefresh.OnClick := btnRefreshClick;
 
-  // Обновить статус
+  // Статус по умолчанию
   StatusBar1.Panels[0].Text := 'Готов';
   StatusBar1.Panels[1].Text := 'БД: не подключена';
 end;
@@ -107,23 +104,17 @@ begin
 end;
 
 procedure TformMain.LoadClients;
-var
-  Query: TFDQuery;
 begin
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Сначала подключитесь к базе данных!');
+    Exit;
+  end;
 
-    if not DB.IsConnected then
-    begin
-        ShowMessage('Сначала подключитесь к базе данных!');
-    end;
-
-
-    try
-      Query := DB.GetClients;
-
-      FDQueryClients.Close;
-
-      FDQueryClients.Connection := DB.GetConnection;
-        FDQueryClients.SQL.Text :=
+  try
+    FDQueryClients.Close;
+    FDQueryClients.Connection := DB.GetConnection;
+    FDQueryClients.SQL.Text :=
   'SELECT ' +
   'id, ' +
   'CAST(full_name AS VARCHAR(100)) AS full_name, ' +
@@ -133,27 +124,21 @@ begin
   'is_active ' +
   'FROM clients ' +
   'ORDER BY full_name';
+    FDQueryClients.Open;
 
-
-      FDQueryClients.Open;
-
-      FDQueryClients.FieldByName('full_name').DisplayWidth := 25;
+    FDQueryClients.FieldByName('full_name').DisplayWidth := 25;
 FDQueryClients.FieldByName('phone').DisplayWidth := 15;
 FDQueryClients.FieldByName('email').DisplayWidth := 30;
 FDQueryClients.FieldByName('membership_type').DisplayWidth := 20;
 
+    StatusBar1.Panels[1].Text := 'Клиентов: ' + IntToStr(FDQueryClients.RecordCount);
 
-
-      StatusBar1.Panels[1].Text := 'Клиентов: ' + IntToStr(FDQueryClients.RecordCount);
-
-    except
+  except
     on E: Exception do
     begin
       ShowMessage('Ошибка загрузки клиентов: ' + E.Message);
     end;
-    end;
-
-
+  end;
 end;
 
 
@@ -186,6 +171,9 @@ begin
 
     FDQuerySubscriptions.Open;
 
+
+
+
     StatusBar1.Panels[1].Text :=
       'Абонементов: ' + IntToStr(FDQuerySubscriptions.RecordCount);
 
@@ -211,18 +199,24 @@ begin
       'SELECT ' +
       'v.id, ' +
       'v.client_id, ' +
-      'c.full_name, ' +
+      'CAST(c.full_name AS VARCHAR(100)) AS full_name, ' +
       'v.visit_date, ' +
       'v.entry_time, ' +
       'v.exit_time, ' +
       'v.duration_minutes, ' +
-      'v.trainer_name, ' +
-      'v.notes ' +
+      'CAST(v.trainer_name AS VARCHAR(100)) AS trainer_name, ' +
+      'CAST(v.notes AS VARCHAR(100)) AS notes ' +
       'FROM visits v ' +
       'LEFT JOIN clients c ON c.id = v.client_id ' +
       'ORDER BY v.visit_date DESC, v.entry_time DESC';
 
     FDQueryVisits.Open;
+
+
+    FDQueryVisits.FieldByName('full_name').DisplayWidth := 25;
+    FDQueryVisits.FieldByName('trainer_name').DisplayWidth := 10;
+
+    FDQueryVisits.FieldByName('notes').DisplayWidth := 25;
 
     StatusBar1.Panels[1].Text :=
       'Посещений: ' + IntToStr(FDQueryVisits.RecordCount);
@@ -245,7 +239,6 @@ begin
     3: LoadVisits;         // Посещения
   end;
 end;
-
 procedure TformMain.FormDestroy(Sender: TObject);
 begin
   // Не нужно освобождать DB - это сделает finalization
@@ -344,12 +337,17 @@ end;
 
 procedure TformMain.btnRefreshClick(Sender: TObject);
 begin
-  if PageControl1.ActivePage = tsClients then
-    LoadClients
-  else if PageControl1.ActivePage = tsSubscription then
-    LoadSubscription
-  else if PageControl1.ActivePage = tsVisits then
-    LoadVisits;
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Сначала подключитесь к базе данных!');
+    Exit;
+  end;
+
+  case PageControl1.ActivePageIndex of
+    0: LoadClients;
+    1: LoadSubscription;
+    3: LoadVisits;
+  end;
 end;
 
 //procedure TformMain.LoadSubscriptions;

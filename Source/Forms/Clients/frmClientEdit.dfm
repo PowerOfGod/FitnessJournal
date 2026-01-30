@@ -98,6 +98,7 @@ object frmClientEdit1: TfrmClientEdit1
     Caption = #1057#1086#1093#1088#1072#1085#1080#1090#1100
     ModalResult = 1
     TabOrder = 5
+    OnClick = btnSaveClientClick
   end
   object btnCancel: TButton
     Left = 247
@@ -106,5 +107,6 @@ object frmClientEdit1: TfrmClientEdit1
     Height = 25
     Caption = #1054#1090#1084#1077#1085#1072
     TabOrder = 6
+    OnClick = btnCancelClick
   end
 end

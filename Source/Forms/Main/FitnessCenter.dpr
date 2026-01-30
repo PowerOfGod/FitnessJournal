@@ -15,11 +15,5 @@ begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TformMain, formMain);
-  Application.CreateForm(TfrmClientEdit1, frmClientEdit1);
-  Application.CreateForm(TfrmClientEdit1, frmClientEdit1);
-  Application.CreateForm(TfrmVisitEdit1, frmVisitEdit1);
-  Application.CreateForm(TfrmSubscriptionEdit1, frmSubscriptionEdit1);
-  Application.CreateForm(TformMain, formMain);
-  Application.CreateForm(TformMain, formMain);
   Application.Run;
 end.
