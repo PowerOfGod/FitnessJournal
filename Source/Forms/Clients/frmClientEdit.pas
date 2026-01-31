@@ -21,15 +21,27 @@ type
     btnSaveClient: TButton;
     btnCancel: TButton;
 
+
     procedure btnSaveClientClick(Sender: TObject);
     procedure btnCancelClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
   private
   FIsEditMode: Boolean;
     FClientID: Integer;
+  function GetFullName: string;
+function GetPhone: string;
+function GetEmail: string;
+function GetMembershipType: string;
+function GetBirthDate: TDate;
+
     procedure ClearForm;
     { Private declarations }
   public
+  property ClientFullName: string read GetFullName;
+property ClientPhone: string read GetPhone;
+property ClientEmail: string read GetEmail;
+property ClientMembershipType: string read GetMembershipType;
+property ClientBirthDate: TDate read GetBirthDate;
   property IsEditMode: Boolean read FIsEditMode write FIsEditMode;
   property ClientID: Integer read FClientID write FClientID;
     { Public declarations }
@@ -42,23 +54,48 @@ implementation
 
 {$R *.dfm}
 
+function TfrmClientEdit1.GetFullName: string;
+begin
+  Result := Trim(Edit1.Text);
+end;
+
+function TfrmClientEdit1.GetPhone: string;
+begin
+  Result := Trim(Edit2.Text);
+end;
+
+function TfrmClientEdit1.GetEmail: string;
+begin
+  Result := Trim(Edit3.Text);
+end;
+
+function TfrmClientEdit1.GetMembershipType: string;
+begin
+  Result := ComboBox1.Text;
+end;
+
+function TfrmClientEdit1.GetBirthDate: TDate;
+begin
+  Result := DateTimePicker1.Date;
+end;
+
+
 procedure TfrmClientEdit1.btnSaveClientClick(Sender: TObject);
 var
   FullName, Phone, Email, MembershipType: string;
   BirthDate: TDate;
   IsActive: Boolean;
+  ClientID: Integer;
 begin
   // ШАГ 1: ВАЛИДАЦИЯ ДАННЫХ
-  // Проверяем, что ФИО не пустое
   FullName := Trim(Edit1.Text);
   if FullName = '' then
   begin
     ShowMessage('Введите ФИО клиента!');
-    Edit1.SetFocus;  // Устанавливаем фокус на поле с ошибкой
-    Exit;            // Выходим из процедуры
+    Edit1.SetFocus;
+    Exit;
   end;
 
-  // Проверяем телефон
   Phone := Trim(Edit2.Text);
   if Phone = '' then
   begin
@@ -67,28 +104,43 @@ begin
     Exit;
   end;
 
-  // ШАГ 2: СБОР ДАННЫХ ИЗ ПОЛЕЙ
+  // ШАГ 2: СБОР ДАННЫХ
   Email := Trim(Edit3.Text);
   MembershipType := ComboBox1.Text;
   BirthDate := DateTimePicker1.Date;
-  IsActive := True;  // Новый клиент всегда активен
+  IsActive := True;
 
   // ШАГ 3: СОХРАНЕНИЕ В БАЗЕ ДАННЫХ
   try
-    // Проверяем подключение к БД
     if DB.IsConnected then
     begin
-      // Пока просто показываем, какие данные собрали
-      // Позже заменим на реальное сохранение
-      ShowMessage('Клиент будет сохранен:' + #13#10 +
-                  'ФИО: ' + FullName + #13#10 +
-                  'Телефон: ' + Phone + #13#10 +
-                  'Email: ' + Email + #13#10 +
-                  'Тип абонемента: ' + MembershipType + #13#10 +
-                  'Дата рождения: ' + DateToStr(BirthDate));
+      // РЕАЛЬНОЕ СОХРАНЕНИЕ!
+      ClientID := DB.AddClient(
+        FullName,           // ФИО
+        Email,              // Email
+        MembershipType,     // Тип абонемента
+        Now,                // Дата регистрации
+        Phone,              // Телефон
+        IsActive,           // Активен
+        BirthDate           // Дата рождения
+      );
 
-      // Закрываем форму с результатом mrOk
-      ModalResult := mrOk;
+      if ClientID > 0 then
+      begin
+        // Сохраняем ID клиента
+        FClientID := ClientID;
+
+        // Закрываем форму с результатом mrOk
+        ModalResult := mrOk;
+
+        // Сообщение об успехе
+        ShowMessage('Клиент успешно сохранен!' + #13#10 +
+                   'ID: ' + IntToStr(ClientID));
+      end
+      else
+      begin
+        ShowMessage('Ошибка: не удалось сохранить клиента');
+      end;
     end
     else
     begin
@@ -101,8 +153,6 @@ begin
     end;
   end;
 end;
-
-
 
 
 procedure TfrmClientEdit1.btnCancelClick(Sender: TObject);

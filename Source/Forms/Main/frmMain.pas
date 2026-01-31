@@ -38,7 +38,6 @@ type
     DateTimePicker1: TDateTimePicker;
     Button1: TButton;
     DBGridVisits: TDBGrid;
-    StatusBar1: TStatusBar;
     btnTestDB: TButton;
     DataSourceClients: TDataSource;
     FDQueryClients: TFDQuery;
@@ -47,11 +46,11 @@ type
     FDQueryVisits: TFDQuery;
     DataSourceSubscriptions: TDataSource;
     DataSourceVisits: TDataSource;
+    StatusBar1: TStatusBar;
     procedure btnNewClientClick(Sender: TObject);
     procedure btnNewVisitClick(Sender: TObject);
     procedure btnNewSubscriptionClick(Sender: TObject);    // ДОБАВИТЬ эту строку
     procedure FormDestroy(Sender: TObject);   // ДОБАВИТЬ эту строку
-    procedure btnTestDBClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure LoadClients;
     procedure LoadSubscription;
@@ -79,8 +78,37 @@ implementation
 
 procedure TformMain.FormCreate(Sender: TObject);
 begin
-  // Инициализация
-  FDBPath := '';
+
+// 1. Путь к БД рядом с exe
+  FDBPath := GetDBPath;
+
+  // 2. Проверка файла
+  if not FileExists(FDBPath) then
+  begin
+    ShowMessage(
+      'Файл базы данных не найден:' + sLineBreak +
+      FDBPath + sLineBreak + sLineBreak +
+      'Поместите FitnessCenter.db рядом с программой.'
+    );
+
+    StatusBar1.Panels[1].Text := 'БД: не найдена';
+    Exit; // Выходим, т.к. без БД приложение не может работать
+  end;
+
+  // 3. Подключаемся
+  try
+    if DB.ConnectToDB(FDBPath) then
+    begin
+      StatusBar1.Panels[0].Text := 'Подключено: ' + ExtractFileName(FDBPath);
+      ShowMessage('✅ База данных подключена');
+
+      LoadClients;
+    end;
+  except
+    on E: Exception do
+      ShowMessage(E.Message);
+  end;
+  
 
   // Привязываем обработчики
   PageControl1.OnChange := PageControl1Change;
@@ -103,43 +131,6 @@ begin
        FDQueryVisits.RecordCount]);
 end;
 
-procedure TformMain.LoadClients;
-begin
-  if not DB.IsConnected then
-  begin
-    ShowMessage('Сначала подключитесь к базе данных!');
-    Exit;
-  end;
-
-  try
-    FDQueryClients.Close;
-    FDQueryClients.Connection := DB.GetConnection;
-    FDQueryClients.SQL.Text :=
-  'SELECT ' +
-  'id, ' +
-  'CAST(full_name AS VARCHAR(100)) AS full_name, ' +
-  'CAST(phone AS VARCHAR(30)) AS phone, ' +
-  'CAST(email AS VARCHAR(100)) AS email, ' +
-  'CAST(membership_type AS VARCHAR(50)) AS membership_type, ' +
-  'is_active ' +
-  'FROM clients ' +
-  'ORDER BY full_name';
-    FDQueryClients.Open;
-
-    FDQueryClients.FieldByName('full_name').DisplayWidth := 25;
-FDQueryClients.FieldByName('phone').DisplayWidth := 15;
-FDQueryClients.FieldByName('email').DisplayWidth := 30;
-FDQueryClients.FieldByName('membership_type').DisplayWidth := 20;
-
-    StatusBar1.Panels[1].Text := 'Клиентов: ' + IntToStr(FDQueryClients.RecordCount);
-
-  except
-    on E: Exception do
-    begin
-      ShowMessage('Ошибка загрузки клиентов: ' + E.Message);
-    end;
-  end;
-end;
 
 
 procedure TformMain.LoadSubscription;
@@ -227,53 +218,93 @@ begin
   end;
 end;
 
+ procedure TformMain.LoadClients;
+begin
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Сначала подключитесь к базе данных!');
+    Exit;
+  end;
 
+  try
+
+
+    // 1. Закрываем запрос
+    FDQueryClients.Close;
+
+    // 2. Проверяем и устанавливаем подключение
+    if not Assigned(FDQueryClients.Connection) then
+      FDQueryClients.Connection := DB.GetConnection;
+
+    // 3. Ваш SQL с CAST (оставляем как есть)
+    FDQueryClients.SQL.Text :=
+      'SELECT ' +
+      'id, ' +
+      'CAST(full_name AS VARCHAR(100)) AS full_name, ' +
+      'CAST(phone AS VARCHAR(30)) AS phone, ' +
+      'CAST(email AS VARCHAR(100)) AS email, ' +
+      'CAST(membership_type AS VARCHAR(50)) AS membership_type, ' +
+      'is_active ' +
+      'FROM clients ' +
+      'ORDER BY full_name';
+
+
+
+    // 4. Открываем запрос
+    FDQueryClients.Open;
+
+
+
+    // 5. Настройка ширины колонок
+    FDQueryClients.FieldByName('full_name').DisplayWidth := 25;
+    FDQueryClients.FieldByName('phone').DisplayWidth := 15;
+    FDQueryClients.FieldByName('email').DisplayWidth := 30;
+    FDQueryClients.FieldByName('membership_type').DisplayWidth := 20;
+
+    // 6. Принудительное обновление DBGrid
+    DBGridClients.Refresh;
+    DBGridClients.Repaint;
+
+    // 7. Обновляем статус
+    StatusBar1.Panels[1].Text := 'Клиентов: ' + IntToStr(FDQueryClients.RecordCount);
+
+
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Ошибка загрузки клиентов: ' + E.Message);
+    end;
+  end;
+end;
 
 procedure TformMain.PageControl1Change(Sender: TObject);
 begin
   if not DB.IsConnected then Exit;
 
   case PageControl1.ActivePageIndex of
-    0: LoadClients;        // Клиенты
-    1: LoadSubscription;   // Абонементы
-    3: LoadVisits;         // Посещения
+    0: begin
+          LoadClients;
+          StatusBar1.Panels[0].Text := 'Таблица: Клиенты';
+          StatusBar1.Panels[1].Text := 'Клиентов: ' +
+           IntToStr(FDQueryClients.RecordCount);
+       end;
+    1: begin
+          LoadSubscription  ;
+          StatusBar1.Panels[0].Text := 'Таблица: Абонементы';
+          StatusBar1.Panels[1].Text := 'Абонементы: ' +
+           IntToStr(FDQuerySubscriptions.RecordCount);
+       end;
+    3: begin
+          LoadVisits  ;
+          StatusBar1.Panels[0].Text := 'Таблица: Посещения';
+          StatusBar1.Panels[1].Text := 'Посещений: ' +
+           IntToStr(FDQueryVisits.RecordCount);
+       end;
   end;
 end;
 procedure TformMain.FormDestroy(Sender: TObject);
 begin
   // Не нужно освобождать DB - это сделает finalization
-end;
-
-
-procedure TformMain.btnTestDBClick(Sender: TObject);
-begin
-  // 1. Путь к БД рядом с exe
-  FDBPath := GetDBPath;
-
-  // 2. Проверка файла
-  if not FileExists(FDBPath) then
-  begin
-    ShowMessage(
-      'Файл базы данных не найден:' + sLineBreak +
-      FDBPath + sLineBreak + sLineBreak +
-      'Поместите FitnessCenter.db рядом с программой.'
-    );
-    Exit;
-  end;
-
-  // 3. Подключаемся
-  try
-    if DB.ConnectToDB(FDBPath) then
-    begin
-      StatusBar1.Panels[0].Text := 'Подключено: ' + ExtractFileName(FDBPath);
-      ShowMessage('✅ База данных подключена');
-
-      LoadClients;
-    end;
-  except
-    on E: Exception do
-      ShowMessage(E.Message);
-  end;
 end;
 
 
@@ -290,10 +321,19 @@ begin
 
   ClientForm := TfrmClientEdit1.Create(Self);
   try
+    ClientForm.IsEditMode := False;
+    ClientForm.Caption := 'Добавить нового клиента';
+
+    // Просто показываем форму
+    // Форма сама сохраняет данные
     if ClientForm.ShowModal = mrOk then
     begin
-      ShowMessage('Клиент добавлен!');
-      LoadClients; // Обновить список клиентов
+      // Клиент уже сохранен формой
+      // Просто обновляем список
+      LoadClients;
+
+      // Можно показать ID сохраненного клиента
+      ShowMessage('Клиент добавлен! ID: ' + IntToStr(ClientForm.ClientID));
     end;
   finally
     ClientForm.Free;

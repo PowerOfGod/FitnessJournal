@@ -22,7 +22,7 @@ object formMain: TformMain
     ParentShowHint = False
     ShowHint = True
     TabOrder = 0
-    ExplicitWidth = 810
+    ExplicitWidth = 954
     object btnNewClient: TToolButton
       Left = 0
       Top = 0
@@ -83,19 +83,19 @@ object formMain: TformMain
     Left = 0
     Top = 29
     Width = 956
-    Height = 567
+    Height = 511
     ActivePage = tsVisits
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 810
-    ExplicitHeight = 510
+    ExplicitLeft = -8
+    ExplicitTop = 23
     object tsClients: TTabSheet
       Caption = #1050#1083#1080#1077#1085#1090#1099
       object DBGridClients: TDBGrid
         Left = 0
         Top = 0
-        Width = 806
-        Height = 490
+        Width = 948
+        Height = 481
         Align = alClient
         DataSource = DataSourceClients
         TabOrder = 0
@@ -121,12 +121,12 @@ object formMain: TformMain
         Left = 0
         Top = 0
         Width = 948
-        Height = 537
+        Height = 481
         Align = alClient
         Caption = 'PanelVisits'
         TabOrder = 0
-        ExplicitWidth = 802
-        ExplicitHeight = 480
+        ExplicitWidth = 946
+        ExplicitHeight = 532
         object Label1: TLabel
           Left = 19
           Top = 16
@@ -157,7 +157,7 @@ object formMain: TformMain
           Left = 1
           Top = 1
           Width = 946
-          Height = 516
+          Height = 479
           Align = alClient
           DataSource = DataSourceVisits
           TabOrder = 2
@@ -166,26 +166,6 @@ object formMain: TformMain
           TitleFont.Height = -12
           TitleFont.Name = 'Segoe UI'
           TitleFont.Style = []
-        end
-        object StatusBar1: TStatusBar
-          Left = 1
-          Top = 517
-          Width = 946
-          Height = 19
-          Panels = <
-            item
-              Text = #1043#1086#1090#1086#1074
-              Width = 100
-            end
-            item
-              Text = #1041#1044': '#1085#1077' '#1087#1086#1076#1082#1083#1102#1095#1077#1085#1072
-              Width = 150
-            end
-            item
-              Width = 50
-            end>
-          ExplicitTop = 460
-          ExplicitWidth = 800
         end
       end
     end
@@ -197,7 +177,27 @@ object formMain: TformMain
     Height = 25
     Caption = #1058#1077#1089#1090' '#1041#1044
     TabOrder = 2
-    OnClick = btnTestDBClick
+  end
+  object StatusBar1: TStatusBar
+    Left = 0
+    Top = 540
+    Width = 956
+    Height = 56
+    Panels = <
+      item
+        Text = #1043#1086#1090#1086#1074
+        Width = 150
+      end
+      item
+        Text = #1041#1044': '#1085#1077' '#1087#1086#1076#1082#1083#1102#1095#1077#1085#1072
+        Width = 150
+      end
+      item
+        Width = 50
+      end>
+    ExplicitLeft = 1
+    ExplicitTop = 480
+    ExplicitWidth = 946
   end
   object MainMenu1: TMainMenu
     Left = 304

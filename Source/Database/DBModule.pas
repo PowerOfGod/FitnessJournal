@@ -255,13 +255,18 @@ function TDBModule.AddClient(fullName: string;
 
 begin
 
+  Result := -1;  // По умолчанию ошибка
+
   if not FIsConnected then
-  raise Exception.Create('Нет подключения к базе данных');
+    raise Exception.Create('Нет подключения к базе данных');
 
   Query := TFDQuery.Create(nil);
-
   try
     Query.Connection := FConnection;
+
+    // ВАЖНО: Начинаем транзакцию
+    if not FConnection.InTransaction then
+      FConnection.StartTransaction;
 
     Query.SQL.Text :=
       'INSERT INTO clients (' +
@@ -282,30 +287,45 @@ begin
       '  :birth_date' +
       ')';
 
-      Query.ParamByName('full_name').AsString := fullName;
-      Query.ParamByName('email').AsString := email;
-      Query.ParamByName('membership_type').AsString := membershipType;
-      Query.ParamByName('registration_date').AsDate := registrationDate;
-      Query.ParamByName('phone').AsString := Phone;
-      Query.ParamByName('is_active').AsBoolean := isActive;
-      Query.ParamByName('birth_date').AsDate := BirthDate;
+    // Используем AsDateTime для дат
+    Query.ParamByName('full_name').AsString := fullName;
+    Query.ParamByName('email').AsString := email;
+    Query.ParamByName('membership_type').AsString := membershipType;
+    Query.ParamByName('registration_date').AsDateTime := registrationDate;
+    Query.ParamByName('phone').AsString := Phone;
+    Query.ParamByName('is_active').AsBoolean := isActive;
+    Query.ParamByName('birth_date').AsDateTime := BirthDate;
 
-      Query.ExecSQL;
+    Query.ExecSQL;
 
-      Query.SQL.Text := '';
+    // Получаем ID новой записи
+    Query.SQL.Text := 'SELECT last_insert_rowid() as new_id';
+    Query.Open;
 
-      Query.SQL.Text := 'SELECT last_insert_rowid() as new_id';
-      Query.Open;
+    if not Query.Eof then
       Result := Query.FieldByName('new_id').AsInteger;
 
-  finally
-        Query.Free;
+    Query.Close;
+
+    // ВАЖНО: Коммитим транзакцию
+    if FConnection.InTransaction then
+      FConnection.Commit;
+
+  except
+    on E: Exception do
+    begin
+      // Откатываем при ошибке
+      if FConnection.InTransaction then
+        FConnection.Rollback;
+      raise;
+       Query.Free;
+    end;
+
   end;
 
 
 
 end;
-
 
 function TDBModule.AddSubscription(ClientID: Integer;
                                    SubscriptionType: string;
