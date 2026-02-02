@@ -4,7 +4,12 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, DBModule,
+  FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
+  FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf,
+  FireDAC.Stan.Async, FireDAC.DApt, FireDAC.UI.Intf, FireDAC.Stan.Def,
+  FireDAC.Stan.Pool, FireDAC.Phys, FireDAC.VCLUI.Wait, Data.DB,
+  FireDAC.Comp.Client, FireDAC.Comp.DataSet;
 
 type
   TfrmVisitEdit1 = class(TForm)
@@ -27,13 +32,17 @@ type
     procedure btnExitClick(Sender: TObject);
     procedure btnCancelClick(Sender: TObject);
     procedure memoNotesChange(Sender: TObject);
-
-
+    procedure LoadClients;
+    procedure LoadClientInfo(ClientID: Integer);
 
   private
 
     FClientID : Integer;
     FIsEntryRegistered : Boolean;
+    FVisitID: Integer;
+    FEntryTime: TDateTime;
+
+
     { Private declarations }
   public
 
@@ -58,44 +67,128 @@ implementation
 
 procedure TfrmVisitEdit1.cbClientChange(Sender: TObject);
 begin
-  case cbClient.ItemIndex of
-    0:begin
-        edtPhone.Text := '+7 999 111-22-33';
-        edtSubscription.Text := 'Месячный (до 31.01.2024)';
-      end;
-    1:begin
-        edtPhone.Text := '+7 999 222-33-44';
-        edtSubscription.Text := 'Разовый';
-      end;
 
-    2:begin
-        edtPhone.Text := '+7 999 333-44-55';
-        edtSubscription.Text := 'Годовой (до 31.12.2024)';
-      end;
+       if cbClient.ItemIndex >= 0 then
+       begin
+          FClientID  := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
 
+          LoadClientInfo(FClientID);
+       end
+       else
+       begin
+         FClientID  := 0;
+         edtPhone.Text := '';
+         edtSubscription.Text := '';
+       end;
+
+
+
+end;
+
+procedure TfrmVisitEdit1.LoadClientInfo(ClientID: Integer);
+var
+  Query: TFDQuery;
+begin
+
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := DB.GetConnection;
+
+    Query.SQL.Text := 'SELECT phone FROM clients WHERE id = :id';
+    Query.ParamByName('id').AsInteger := ClientID;
+    Query.Open;
+
+    if not Query.Eof then
+      edtPhone.Text := Query.FieldByName('phone').AsString;
+
+    Query.Close;
+
+    Query.SQL.Text := 'SELECT subscription_type, end_date ' +
+      'FROM subscriptions ' + 'WHERE client_id = :id AND is_active = 1 ' +
+      'AND date(end_date) >= date(''now'') ' + 'LIMIT 1';
+    Query.ParamByName('id').AsInteger := ClientID;
+    Query.Open;
+
+      if not Query.Eof then
+    begin
+      edtSubscription.Text :=
+        Query.FieldByName('subscription_type').AsString + ' (до ' +
+        FormatDateTime('dd.mm.yyyy', Query.FieldByName('end_date').AsDateTime) + ')';
+    end
+    else
+    begin
+      edtSubscription.Text := 'Нет активного абонемента';
+    end;
+
+
+  finally
+    Query.Free;
   end;
 
-    FClientID  := cbClient.ItemIndex + 1;
 end;
+
+
+
 
 procedure TfrmVisitEdit1.FormCreate(Sender: TObject);
 begin
 
   FClientID := 0;
+  FVisitID  := 0;
   FIsEntryRegistered := False;
 
+  LoadClients;
 
-  cbClient.Items.Add('Савченко Владислав Павлович');
-  cbClient.Items.Add('Бондарев Владислав Александрович');
-  cbClient.Items.Add('Джоли Анжелина Питтовна');
 
-  cbTrainer.Items.Add('Кирюха');
-  cbTrainer.Items.Add('Серега');
-  cbTrainer.Items.Add('Петя');
-  cbTrainer.Items.Add('Толик');
+  cbTrainer.Items.Clear;
+  cbTrainer.Items.Add('Иван Петров');
+  cbTrainer.Items.Add('Мария Сидорова');
+  cbTrainer.Items.Add('Алексей Козлов');
+  cbTrainer.Items.Add('Екатерина Новикова');
+
+   if cbTrainer.Items.Count > 0 then
+    cbTrainer.ItemIndex := 0;
 
   btnExit.Enabled := False;
 
+end;
+
+
+ procedure TfrmVisitEdit1.LoadClients;
+begin
+
+  cbClient.Clear;
+
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Сначала подключитесь к базе данных!');
+    Exit;
+  end;
+      var Query := TFDQuery.Create(nil);
+  try
+
+      Query.Connection := DB.GetConnection;
+
+        Query.SQL.Text :=
+      'SELECT id, full_name, phone FROM clients ' +
+      'WHERE is_active = 1 ' +
+      'ORDER BY full_name';
+    Query.Open;
+
+        while not Query.Eof do
+    begin
+      // Сохраняем ID клиента в Tag
+      cbClient.Items.AddObject(
+        Query.FieldByName('full_name').AsString,
+        TObject(Query.FieldByName('id').AsInteger)
+      );
+      Query.Next;
+    end;
+
+
+  finally
+    Query.Free;
+  end;
 end;
 
 
