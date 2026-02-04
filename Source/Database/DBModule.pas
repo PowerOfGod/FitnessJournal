@@ -6,7 +6,7 @@ uses
   System.SysUtils, FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Error,
   FireDAC.UI.Intf, FireDAC.Phys.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool,
   FireDAC.Stan.Async, FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.Phys.SQLiteDef,
-  FireDAC.Stan.ExprFuncs, FireDAC.VCLUI.Wait, FireDAC.Comp.Client, VCL.Dialogs;
+  FireDAC.Stan.ExprFuncs, FireDAC.VCLUI.Wait, FireDAC.Comp.Client, VCL.Dialogs, System.Variants;
 
 type
   TDBModule = class(TObject)
@@ -455,10 +455,10 @@ begin
 
       // Обработка exit_time: если 0, то NULL (клиент еще не вышел)
       if ExitTime > 0 then
-        Query.ParamByName('exit_time').AsString :=
-          FormatDateTime('hh:nn:ss', ExitTime)
-      else
-        Query.ParamByName('exit_time').Clear; // Устанавливаем NULL
+  Query.ParamByName('exit_time').AsString := FormatDateTime('hh:nn:ss', ExitTime)
+else
+  Query.ParamByName('exit_time').AsString := ''; // Пустая строка
+
 
       Query.ParamByName('duration_minutes').AsInteger := DurationMinutes;
       Query.ParamByName('trainer_name').AsString := TrainerName;

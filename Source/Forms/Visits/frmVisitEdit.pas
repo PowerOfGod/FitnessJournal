@@ -1,4 +1,4 @@
-unit frmVisitEdit;
+п»їunit frmVisitEdit;
 
 interface
 
@@ -112,12 +112,12 @@ begin
       if not Query.Eof then
     begin
       edtSubscription.Text :=
-        Query.FieldByName('subscription_type').AsString + ' (до ' +
+        Query.FieldByName('subscription_type').AsString + ' (РґРѕ ' +
         FormatDateTime('dd.mm.yyyy', Query.FieldByName('end_date').AsDateTime) + ')';
     end
     else
     begin
-      edtSubscription.Text := 'Нет активного абонемента';
+      edtSubscription.Text := 'РќРµС‚ Р°РєС‚РёРІРЅРѕРіРѕ Р°Р±РѕРЅРµРјРµРЅС‚Р°';
     end;
 
 
@@ -141,10 +141,10 @@ begin
 
 
   cbTrainer.Items.Clear;
-  cbTrainer.Items.Add('Иван Петров');
-  cbTrainer.Items.Add('Мария Сидорова');
-  cbTrainer.Items.Add('Алексей Козлов');
-  cbTrainer.Items.Add('Екатерина Новикова');
+  cbTrainer.Items.Add('РРІР°РЅ РџРµС‚СЂРѕРІ');
+  cbTrainer.Items.Add('РњР°СЂРёСЏ РЎРёРґРѕСЂРѕРІР°');
+  cbTrainer.Items.Add('РђР»РµРєСЃРµР№ РљРѕР·Р»РѕРІ');
+  cbTrainer.Items.Add('Р•РєР°С‚РµСЂРёРЅР° РќРѕРІРёРєРѕРІР°');
 
    if cbTrainer.Items.Count > 0 then
     cbTrainer.ItemIndex := 0;
@@ -161,7 +161,7 @@ begin
 
   if not DB.IsConnected then
   begin
-    ShowMessage('Сначала подключитесь к базе данных!');
+    ShowMessage('РЎРЅР°С‡Р°Р»Р° РїРѕРґРєР»СЋС‡РёС‚РµСЃСЊ Рє Р±Р°Р·Рµ РґР°РЅРЅС‹С…!');
     Exit;
   end;
       var Query := TFDQuery.Create(nil);
@@ -177,7 +177,7 @@ begin
 
         while not Query.Eof do
     begin
-      // Сохраняем ID клиента в Tag
+      // РЎРѕС…СЂР°РЅСЏРµРј ID РєР»РёРµРЅС‚Р° РІ Tag
       cbClient.Items.AddObject(
         Query.FieldByName('full_name').AsString,
         TObject(Query.FieldByName('id').AsInteger)
@@ -194,23 +194,83 @@ end;
 
 
 
-
-
 procedure TfrmVisitEdit1.btnEntryClick(Sender: TObject);
+var
+  VisitDate: TDate;
+  EntryTime: TTime;
+  ExitTime: TTime;
+  TrainerName: string;
+  Notes: string;
 begin
-  // Проверка: если НЕ выбран клиент ИЛИ НЕ выбран тренер
-  if (cbClient.ItemIndex < 0) or (cbTrainer.ItemIndex < 0) then
+  // 1. РџСЂРѕРІРµСЂРєР° РІС‹Р±РѕСЂР° РєР»РёРµРЅС‚Р°
+  if cbClient.ItemIndex < 0 then
   begin
-    ShowMessage('Выберите клиента и тренера!');
+    ShowMessage('Р’С‹Р±РµСЂРёС‚Рµ РєР»РёРµРЅС‚Р°!');
+    cbClient.SetFocus;
     Exit;
   end;
 
-  // Регистрация входа
-  FIsEntryRegistered := True;
-  btnEntry.Enabled := False;
-  btnExit.Enabled := True;
+  // 2. РџСЂРѕРІРµСЂРєР° РІС‹Р±РѕСЂР° С‚СЂРµРЅРµСЂР°
+  if cbTrainer.ItemIndex < 0 then
+  begin
+    ShowMessage('Р’С‹Р±РµСЂРёС‚Рµ С‚СЂРµРЅРµСЂР°!');
+    cbTrainer.SetFocus;
+    Exit;
+  end;
 
-  ShowMessage('Вы успешно зарегистрировались!' + #13#10 + 'Клиент: ' + cbClient.Text + #13#10 + 'Тренер: ' + cbTrainer.Text);
+  // 3. РџРѕРґРіРѕС‚Р°РІР»РёРІР°РµРј РґР°РЅРЅС‹Рµ
+  VisitDate := Date;
+  EntryTime := Time;
+  ExitTime := 0; // 0 = NULL (РєР»РёРµРЅС‚ РµС‰Рµ РЅРµ РІС‹С€РµР»)
+  TrainerName := cbTrainer.Text;
+  Notes := memoNotes.Text;
+
+  // 4. РџРѕР»СѓС‡Р°РµРј ID РєР»РёРµРЅС‚Р°
+  FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
+
+  // 5. РЎРѕС…СЂР°РЅСЏРµРј РІ Р‘Р”
+  try
+    FVisitID := DB.AddVisit(  // в†ђ Р’РђР–РќРћ: СЃРѕС…СЂР°РЅСЏРµРј РІРѕР·РІСЂР°С‰Р°РµРјС‹Р№ ID!
+      FClientID,
+      VisitDate,
+      EntryTime,
+      ExitTime,
+      TrainerName,
+      Notes
+    );
+
+    if FVisitID > 0 then
+    begin
+      // РЈСЃРїРµС€РЅРѕ СЃРѕС…СЂР°РЅРµРЅРѕ
+      FEntryTime := EntryTime;
+      FIsEntryRegistered := True;
+
+      // РњРµРЅСЏРµРј РёРЅС‚РµСЂС„РµР№СЃ
+      btnEntry.Enabled := False;
+      btnExit.Enabled := True;
+      cbClient.Enabled := False;
+      cbTrainer.Enabled := False;
+      memoNotes.ReadOnly := True;
+
+      // РЎРѕРѕР±С‰РµРЅРёРµ РѕР± СѓСЃРїРµС…Рµ
+      ShowMessage(
+        'вњ… Р’С…РѕРґ Р·Р°С„РёРєСЃРёСЂРѕРІР°РЅ!' + sLineBreak +
+        'РљР»РёРµРЅС‚: ' + cbClient.Text + sLineBreak +
+        'Р’СЂРµРјСЏ: ' + FormatDateTime('hh:nn:ss', EntryTime) + sLineBreak +
+        'ID РїРѕСЃРµС‰РµРЅРёСЏ: ' + IntToStr(FVisitID)
+      );
+    end
+    else
+    begin
+      ShowMessage('вќЊ РћС€РёР±РєР°: РЅРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РїРѕСЃРµС‰РµРЅРёРµ (ID <= 0)');
+    end;
+
+  except
+    on E: Exception do
+    begin
+      ShowMessage('вќЊ РћС€РёР±РєР° РїСЂРё СЃРѕС…СЂР°РЅРµРЅРёРё РїРѕСЃРµС‰РµРЅРёСЏ:' + sLineBreak + E.Message);
+    end;
+  end;
 end;
 
 
@@ -218,7 +278,7 @@ procedure TfrmVisitEdit1.btnExitClick(Sender: TObject);
 begin
   if FIsEntryRegistered = False then
   begin
-    ShowMessage('Вы не зарегистрированны! Введите данные и войдите)');
+    ShowMessage('Р’С‹ РЅРµ Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅРЅС‹! Р’РІРµРґРёС‚Рµ РґР°РЅРЅС‹Рµ Рё РІРѕР№РґРёС‚Рµ)');
     Exit;
   end
   else
@@ -232,14 +292,14 @@ end;
 
 procedure TfrmVisitEdit1.btnCancelClick(Sender: TObject);
 begin
-  // Очистка формы
+  // РћС‡РёСЃС‚РєР° С„РѕСЂРјС‹
   cbClient.ItemIndex := -1;
   cbTrainer.Text := '';
   edtPhone.Text := '';
   edtSubscription.Text := '';
   memoNotes.Text := '';
 
-  // Сброс состояния
+  // РЎР±СЂРѕСЃ СЃРѕСЃС‚РѕСЏРЅРёСЏ
   FIsEntryRegistered := False;
   btnEntry.Enabled := True;
   btnExit.Enabled := False;
@@ -250,7 +310,7 @@ procedure TfrmVisitEdit1.memoNotesChange(Sender: TObject);
 begin
    if memoNotes.MaxLength > 500 then
    begin
-      ShowMessage('Вы превысили лимит символов!');
+      ShowMessage('Р’С‹ РїСЂРµРІС‹СЃРёР»Рё Р»РёРјРёС‚ СЃРёРјРІРѕР»РѕРІ!');
    end;
 
 end;
