@@ -1,10 +1,15 @@
-unit frmSubscriptionEdit;
+п»їunit frmSubscriptionEdit;
 
 interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, DBModule,
+  FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
+  FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf,
+  FireDAC.Stan.Async, FireDAC.DApt, FireDAC.UI.Intf, FireDAC.Stan.Def,
+  FireDAC.Stan.Pool, FireDAC.Phys, FireDAC.VCLUI.Wait, Data.DB,
+  FireDAC.Comp.Client, FireDAC.Comp.DataSet, Vcl.ComCtrls;
 
 type
   TfrmSubscriptionEdit1 = class(TForm)
@@ -27,7 +32,11 @@ type
   private
 
     FClientID : Integer;
-
+    FSubscriptionID: Integer;
+    procedure LoadClientsFromDB;
+    procedure CalculateEndDate;
+     procedure UpdatePrice;
+    procedure SetupSubscriptionTypes;
     { Private declarations }
   public
 
@@ -37,6 +46,8 @@ type
 
 var
   frmSubscriptionEdit1: TfrmSubscriptionEdit1;
+  SubscriptionPrices: array[0..3] of Double = (500, 3000, 8000, 25000);
+  SubscriptionDurations: array[0..3] of Integer = (1, 30, 90, 365);
 
 implementation
 
@@ -46,71 +57,135 @@ implementation
 
 procedure TfrmSubscriptionEdit1.btnCancelClick(Sender: TObject);
 begin
-  if MessageDlg('Отменить ввод данных?', mtConfirmation, [mbYes, mbNo], 0) = mrYes
-  then
+  if MessageDlg('РћС‚РјРµРЅРёС‚СЊ РґРѕР±Р°РІР»РµРЅРёРµ Р°Р±РѕРЅРµРјРµРЅС‚Р°? Р’СЃРµ РІРІРµРґРµРЅРЅС‹Рµ РґР°РЅРЅС‹Рµ Р±СѓРґСѓС‚ РїРѕС‚РµСЂСЏРЅС‹.',
+                mtConfirmation, [mbYes, mbNo], 0) = mrYes then
   begin
-    // Очистка формы
-    cbClient.ItemIndex := -1;
-    cbType.ItemIndex := -1;
-    edtPrice.Text := '';
-    dtStartDate.Date := Date;
-    dtEndDate.Date := Date + 30;
-
     ModalResult := mrCancel;
   end;
-
 end;
 
+
 procedure TfrmSubscriptionEdit1.btnSaveClick(Sender: TObject);
+var
+  SubscriptionType: string;
+  StartDate, EndDate: TDate;
+  Price: Double;
+  VisitsCount: Integer;
+  RemainingVisits: Integer;
 begin
-// Проверка: если НЕ выбран клиент ИЛИ НЕ выбран тренер
+  // 1. РџСЂРѕРІРµСЂРєР° РІС‹Р±РѕСЂР° РєР»РёРµРЅС‚Р° Рё С‚РёРїР°
   if (cbType.ItemIndex < 0) or (cbClient.ItemIndex < 0) then
   begin
-    ShowMessage('Выберите клиента и абонемент!');
+    ShowMessage('Р’С‹Р±РµСЂРёС‚Рµ РєР»РёРµРЅС‚Р° Рё С‚РёРї Р°Р±РѕРЅРµРјРµРЅС‚Р°!');
     Exit;
   end;
 
+  // 2. РџРѕР»СѓС‡Р°РµРј ID РєР»РёРµРЅС‚Р°
+  if cbClient.ItemIndex > 0 then
+    FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex])
+  else
+  begin
+    ShowMessage('Р’С‹Р±РµСЂРёС‚Рµ РєР»РёРµРЅС‚Р°!');
+    Exit;
+  end;
 
+  // 3. РџРѕР»СѓС‡Р°РµРј РґР°РЅРЅС‹Рµ РёР· С„РѕСЂРјС‹
+  SubscriptionType := cbType.Text;
+  StartDate := dtStartDate.Date;
+  EndDate := dtEndDate.Date;
 
+  // РџСЂРѕРІРµСЂСЏРµРј С‡С‚Рѕ С†РµРЅР° - С‡РёСЃР»Рѕ
+  if not TryStrToFloat(edtPrice.Text, Price) then
+  begin
+    ShowMessage('РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ С†РµРЅС‹!');
+    Exit;
+  end;
 
+  // 4. РћРїСЂРµРґРµР»СЏРµРј РєРѕР»РёС‡РµСЃС‚РІРѕ РїРѕСЃРµС‰РµРЅРёР№
+  if SubscriptionType = 'Р Р°Р·РѕРІС‹Р№' then
+  begin
+    VisitsCount := 1;
+    RemainingVisits := 1;
+  end
+  else
+  begin
+    VisitsCount := 0;        // Р‘РµР·Р»РёРјРёС‚
+    RemainingVisits := 0;    // Р‘РµР·Р»РёРјРёС‚
+  end;
 
-  ShowMessage('Вы успешно купили абонемент!' + #13#10 + 'Клиент: ' + cbClient.Text + #13#10 + 'Абонемент: ' + cbType.Text);
-  ModalResult := mrOk;
+  // 5. РЎРѕС…СЂР°РЅСЏРµРј РІ Р‘Р”
+  try
+    FSubscriptionID := DB.AddSubscription(  // в†ђ РРЎРџР РђР’Р¬!
+      FClientID,
+      SubscriptionType,
+      StartDate,
+      EndDate,
+      StrToFloat(edtPrice.Text),
+      VisitsCount,
+      RemainingVisits
+    );
+
+    // 6. РџСЂРѕРІРµСЂСЏРµРј СЂРµР·СѓР»СЊС‚Р°С‚
+    if FSubscriptionID > 0 then
+    begin
+      ShowMessage(
+        'вњ… РђР±РѕРЅРµРјРµРЅС‚ СѓСЃРїРµС€РЅРѕ РґРѕР±Р°РІР»РµРЅ!' + sLineBreak +
+        'РљР»РёРµРЅС‚: ' + cbClient.Text + sLineBreak +
+        'РўРёРї: ' + SubscriptionType + sLineBreak +
+        'РЎС‚РѕРёРјРѕСЃС‚СЊ: ' + FormatFloat('0 СЂСѓР±.', Price) + sLineBreak +
+        'ID Р°Р±РѕРЅРµРјРµРЅС‚Р°: ' + IntToStr(FSubscriptionID)  // в†ђ РРЎРџР РђР’Р¬!
+      );
+      ModalResult := mrOk;
+    end
+    else
+    begin
+      ShowMessage('вќЊ РћС€РёР±РєР°: РЅРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ Р°Р±РѕРЅРµРјРµРЅС‚ (ID <= 0)');
+    end;
+
+  except
+    on E: Exception do
+    begin
+      ShowMessage('вќЊ РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ Р°Р±РѕРЅРµРјРµРЅС‚Р°:' + sLineBreak + E.Message);
+    end;
+  end;
 end;
 
 procedure TfrmSubscriptionEdit1.cbTypeChange(Sender: TObject);
 begin
 
 
-  case cbType.ItemIndex of
-    0:begin
-           dtEndDate.Date := Date + 1;
-           edtPrice.Text := '500';
-//        edtSubscription.Text := 'Месячный (до 31.01.2024)';
-      end;
-    1:begin
-          dtEndDate.Date := Date + 30;
-          edtPrice.Text := '3000';
-//        edtPhone.Text := '+7 999 222-33-44';
-//        edtSubscription.Text := 'Разовый';
-      end;
+//  case cbType.ItemIndex of
+//    0:begin
+//           dtEndDate.Date := Date + 1;
+//           edtPrice.Text := '500';
+////        edtSubscription.Text := 'РњРµСЃСЏС‡РЅС‹Р№ (РґРѕ 31.01.2024)';
+//      end;
+//    1:begin
+//          dtEndDate.Date := Date + 30;
+//          edtPrice.Text := '3000';
+////        edtPhone.Text := '+7 999 222-33-44';
+////        edtSubscription.Text := 'Р Р°Р·РѕРІС‹Р№';
+//      end;
+//
+//    2:begin
+//          dtEndDate.Date := Date + 90;
+//          edtPrice.Text := '8000';
+////        edtPhone.Text := '+7 999 333-44-55';
+////        edtSubscription.Text := 'Р“РѕРґРѕРІРѕР№ (РґРѕ 31.12.2024)';
+//      end;
+//    3:begin
+//          dtEndDate.Date := Date + 365;
+//          edtPrice.Text := '25000';
+////        edtPhone.Text := '+7 999 333-44-55';
+////        edtSubscription.Text := 'Р“РѕРґРѕРІРѕР№ (РґРѕ 31.12.2024)';
+//      end;
+//
+//  end;
 
-    2:begin
-          dtEndDate.Date := Date + 90;
-          edtPrice.Text := '8000';
-//        edtPhone.Text := '+7 999 333-44-55';
-//        edtSubscription.Text := 'Годовой (до 31.12.2024)';
-      end;
-    3:begin
-          dtEndDate.Date := Date + 365;
-          edtPrice.Text := '25000';
-//        edtPhone.Text := '+7 999 333-44-55';
-//        edtSubscription.Text := 'Годовой (до 31.12.2024)';
-      end;
+//    FClientID  := cbClient.ItemIndex + 1;
 
-  end;
-
-    FClientID  := cbClient.ItemIndex + 1;
+CalculateEndDate;
+  UpdatePrice;
 
 end;
 
@@ -119,23 +194,121 @@ begin
 
 
   FClientID := 0;
+  FSubscriptionID := 0;
   edtPrice.ReadOnly := True;
   edtPrice.Color := clBtnFace;
 
+  cbType.ItemIndex := 0;
+    SubscriptionPrices[0] := 500;
+     SubscriptionPrices[1] := 3000;
+      SubscriptionPrices[2] := 8000;
+       SubscriptionPrices[3] := 25000;
 
+       SubscriptionDurations[0] := 1;
+       SubscriptionDurations[1] := 30;
+       SubscriptionDurations[2] := 90;
+       SubscriptionDurations[3] := 365;
 
-  cbClient.Items.Add('Савченко Владислав Павлович');
-  cbClient.Items.Add('Бондарев Владислав Александрович');
-  cbClient.Items.Add('Джоли Анжелина Питтовна');
+        edtPrice.ReadOnly := True;
+        edtPrice.Color := clBtnFace;
 
-    cbType.Items.Add('Разовый (500 руб)');
-  cbType.Items.Add('Месячный (3000 руб)');
-  cbType.Items.Add('Квартальный (8000 руб)');
-  cbType.Items.Add('Годовой (25000 руб)');
+         LoadClientsFromDB;
+         SetupSubscriptionTypes;
+
 
 
   dtStartDate.Date := Date;
-  dtEndDate.Date := Date + 30;
+  CalculateEndDate;
+  UpdatePrice;
+
+end;
+
+
+procedure TfrmSubscriptionEdit1.LoadClientsFromDB;
+begin
+  cbClient.Clear;
+  cbClient.Items.Add('-- Р’С‹Р±РµСЂРёС‚Рµ РєР»РёРµРЅС‚Р° --');
+
+  if not DB.IsConnected then
+  begin
+    ShowMessage('РќРµС‚ РїРѕРґРєР»СЋС‡РµРЅРёСЏ Рє Р±Р°Р·Рµ РґР°РЅРЅС‹С…!');
+    Exit;
+  end;
+
+  var Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := DB.GetConnection;
+    Query.SQL.Text :=
+      'SELECT id, full_name, phone ' +
+      'FROM clients ' +
+      'WHERE is_active = 1 ' +
+      'ORDER BY full_name';
+    Query.Open;
+
+    while not Query.Eof do
+    begin
+      cbClient.Items.AddObject(
+        Query.FieldByName('full_name').AsString,
+        TObject(Query.FieldByName('id').AsInteger)
+      );
+      Query.Next;
+    end;
+
+  finally
+    Query.Free;
+  end;
+
+  cbClient.ItemIndex := 0;
+end;
+
+procedure TfrmSubscriptionEdit1.SetupSubscriptionTypes;
+begin
+    cbType.Items.Clear;
+
+
+cbType.Items.Add('Р Р°Р·РѕРІС‹Р№');
+  cbType.Items.Add('РњРµСЃСЏС‡РЅС‹Р№');
+  cbType.Items.Add('РљРІР°СЂС‚Р°Р»СЊРЅС‹Р№');
+  cbType.Items.Add('Р“РѕРґРѕРІРѕР№');
+
+  if cbType.Items.Count > 0 then
+    cbType.ItemIndex := 0;
+
+end;
+
+procedure TfrmSubscriptionEdit1.CalculateEndDate;
+begin
+  if cbType.ItemIndex < 0 then Exit;
+
+  // РСЃРїРѕР»СЊР·СѓРµРј РјР°СЃСЃРёРІ РґР»РёС‚РµР»СЊРЅРѕСЃС‚РµР№
+  if (cbType.ItemIndex >= 0) and (cbType.ItemIndex <= High(SubscriptionDurations)) then
+  begin
+    dtEndDate.Date := dtStartDate.Date + SubscriptionDurations[cbType.ItemIndex];
+  end
+  else
+  begin
+    dtEndDate.Date := dtStartDate.Date;
+  end;
+end;
+
+procedure TfrmSubscriptionEdit1.UpdatePrice;
+begin
+     if cbType.ItemIndex < 0 then
+  begin
+    edtPrice.Text := '0';
+    Exit;
+  end;
+
+  // РСЃРїРѕР»СЊР·СѓРµРј РјР°СЃСЃРёРІ С†РµРЅ
+  if (cbType.ItemIndex >= 0) and (cbType.ItemIndex <= High(SubscriptionPrices)) then
+  begin
+    edtPrice.Text := FormatFloat('0', SubscriptionPrices[cbType.ItemIndex]);
+  end
+  else
+  begin
+    edtPrice.Text := '0';
+  end;
+
 
 end;
 

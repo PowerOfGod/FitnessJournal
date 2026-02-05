@@ -84,11 +84,11 @@ object formMain: TformMain
     Top = 29
     Width = 956
     Height = 511
-    ActivePage = tsVisits
+    ActivePage = tsSubscription
     Align = alClient
     TabOrder = 1
-    ExplicitLeft = -8
-    ExplicitTop = 23
+    ExplicitWidth = 954
+    ExplicitHeight = 506
     object tsClients: TTabSheet
       Caption = #1050#1083#1080#1077#1085#1090#1099
       object DBGridClients: TDBGrid
@@ -109,6 +109,19 @@ object formMain: TformMain
     object tsSubscription: TTabSheet
       Caption = #1040#1073#1086#1085#1077#1084#1077#1085#1090#1099
       ImageIndex = 1
+      object DBGridSubscriptions: TDBGrid
+        Left = 0
+        Top = 0
+        Width = 953
+        Height = 476
+        DataSource = DataSourceSubscriptions
+        TabOrder = 0
+        TitleFont.Charset = DEFAULT_CHARSET
+        TitleFont.Color = clWindowText
+        TitleFont.Height = -12
+        TitleFont.Name = 'Segoe UI'
+        TitleFont.Style = []
+      end
     end
     object tsStatistics: TTabSheet
       Caption = #1057#1090#1072#1090#1080#1089#1090#1080#1082#1072
@@ -126,7 +139,7 @@ object formMain: TformMain
         Caption = 'PanelVisits'
         TabOrder = 0
         ExplicitWidth = 946
-        ExplicitHeight = 532
+        ExplicitHeight = 476
         object Label1: TLabel
           Left = 19
           Top = 16
@@ -195,9 +208,8 @@ object formMain: TformMain
       item
         Width = 50
       end>
-    ExplicitLeft = 1
-    ExplicitTop = 480
-    ExplicitWidth = 946
+    ExplicitTop = 535
+    ExplicitWidth = 954
   end
   object MainMenu1: TMainMenu
     Left = 304

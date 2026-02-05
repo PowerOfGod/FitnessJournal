@@ -350,8 +350,8 @@ begin
         '  start_date, ' +
         '  end_date, ' +
         '  price, '     +
-        '  visits_count, ' +
-        '  remaining_visits, ' +
+        '  visit_count, ' +
+        '  remaining_visit, ' +
         '  is_active ' +
         ') VALUES ( ' +
         '  :client_id, ' +
