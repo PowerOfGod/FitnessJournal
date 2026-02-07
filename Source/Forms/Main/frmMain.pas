@@ -149,20 +149,21 @@ begin
       'SELECT ' +
       'id, ' +
       'client_id, ' +
-      'subscription_type, ' +
+      'CAST(subscription_type AS VARCHAR(100)) AS subscription_type, ' +
       'start_date, ' +
       'end_date, ' +
       'price, ' +
       'visit_count, ' +
       'remaining_visit, ' +
       'is_active, ' +
-      'notes ' +
+      'CAST(notes AS VARCHAR(100)) AS notes ' +
       'FROM subscriptions ' +
       'ORDER BY start_date DESC';
 
     FDQuerySubscriptions.Open;
 
-
+     FDQuerySubscriptions.FieldByName('subscription_type').DisplayWidth := 10;
+     FDQuerySubscriptions.FieldByName('notes').DisplayWidth := 25;
 
 
     StatusBar1.Panels[1].Text :=
