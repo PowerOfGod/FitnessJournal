@@ -47,6 +47,7 @@ type
     DataSourceSubscriptions: TDataSource;
     DataSourceVisits: TDataSource;
     StatusBar1: TStatusBar;
+    procedure RegisterVisitExit(VisitID: Integer);
     procedure btnNewClientClick(Sender: TObject);
     procedure btnNewVisitClick(Sender: TObject);
     procedure btnNewSubscriptionClick(Sender: TObject);    // ДОБАВИТЬ эту строку
@@ -60,6 +61,7 @@ type
 ////    procedure LoadVisits;
     procedure PageControl1Change(Sender: TObject);
     procedure LoadStatistics;
+    procedure DBGridVisitsDblClick(Sender: TObject);
   private
     { Private declarations }
     FDBPath: string;
@@ -389,6 +391,93 @@ begin
     1: LoadSubscription;
     3: LoadVisits;
   end;
+end;
+
+
+procedure TformMain.DBGridVisitsDblClick(Sender: TObject);
+begin
+    if FDQueryVisits.IsEmpty  then
+    begin
+        ShowMessage('Нет данных в таблице!!');
+        exit;
+    end;
+
+     var VisitID := FDQueryVisits.FieldByName('id').AsInteger;
+      var ClientName := FDQueryVisits.FieldByName('full_name').AsString;
+
+        var ExitTimeField := FDQueryVisits.FieldByName('exit_time');
+
+        if ExitTimeField.IsNull then
+        begin
+           var Response := MessageDlg(
+      'Зарегистрировать выход ' + ClientName + '?',
+      mtConfirmation,
+      [mbYes, mbNo],
+      0);
+
+      if Response = mrYes then
+      begin
+          RegisterVisitExit(VisitID)  /// Тут функция  ///
+      end;
+
+        end
+        else
+        begin
+          ShowMessage(
+      ClientName + ' уже завершил(а) посещение' + sLineBreak +
+      'Время выхода: ' + ExitTimeField.AsString
+    );
+        end;
+
+
+end;
+
+
+procedure TformMain.RegisterVisitExit(VisitID: Integer);
+var
+  ExitTime: TTime;
+  Query: TFDQuery;
+begin
+
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Сначала подключитесь к базе данных!');
+    Exit;
+  end;
+
+  ExitTime := Time;
+
+
+  try
+    Query := TFDQuery.Create(nil);
+     try
+     Query.Connection := DB.GetConnection;
+
+     Query.SQL.Text :=
+        'UPDATE visits ' +
+        'SET exit_time = :exit_time, ' +
+        'duration_minutes = :duration ' +
+        'WHERE id = :id';
+
+     Query.ParamByName('exit_time').AsString := FormatDateTime('hh:nn:ss', ExitTime);
+      Query.ParamByName('duration').AsInteger := 60; // Пока заглушка - потом рассчитаем
+      Query.ParamByName('id').AsInteger := VisitID;
+
+         Query.ExecSQL;
+
+          ShowMessage('Выход успешно зарегистрирован!');
+
+           LoadVisits;
+     finally
+       Query.Free;
+     end;
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Ошибка: ' + E.Message);
+    end;
+  end;
+
 end;
 
 //procedure TformMain.LoadSubscriptions;
