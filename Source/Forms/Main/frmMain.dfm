@@ -138,6 +138,8 @@ object formMain: TformMain
         Align = alClient
         Caption = 'PanelVisits'
         TabOrder = 0
+        ExplicitWidth = 946
+        ExplicitHeight = 476
         object Label1: TLabel
           Left = 19
           Top = 16

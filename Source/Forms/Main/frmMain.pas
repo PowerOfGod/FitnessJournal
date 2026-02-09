@@ -437,8 +437,10 @@ procedure TformMain.RegisterVisitExit(VisitID: Integer);
 var
   ExitTime: TTime;
   Query: TFDQuery;
+  EntryTimeStr: string;
+  EntryTime: TTime;
+  DurationMinutes: Integer;
 begin
-
   if not DB.IsConnected then
   begin
     ShowMessage('Сначала подключитесь к базе данных!');
@@ -447,39 +449,85 @@ begin
 
   ExitTime := Time;
 
-
   try
     Query := TFDQuery.Create(nil);
-     try
-     Query.Connection := DB.GetConnection;
+    try
+      Query.Connection := DB.GetConnection;
 
-     Query.SQL.Text :=
+      // 1. Получаем время входа
+      Query.SQL.Text := 'SELECT entry_time FROM visits WHERE id = :id';
+      Query.ParamByName('id').AsInteger := VisitID;
+      Query.Open;
+
+      if Query.Eof then
+      begin
+        ShowMessage('Посещение не найдено!');
+        Exit;
+      end;
+
+      EntryTimeStr := Query.FieldByName('entry_time').AsString;
+      Query.Close;
+
+      // 2. Преобразуем строку в TTime
+      try
+        EntryTime := StrToTime(EntryTimeStr);
+      except
+        // Если не удалось распарсить, используем текущее время минус 1 час
+        EntryTime := Time - (1/24);
+      end;
+
+      // 3. Проверяем, что время выхода позже времени входа
+      if ExitTime < EntryTime then
+      begin
+        // Если клиент пришел вечером, а выходит утром (например, ночная тренировка)
+        // Добавляем 1 день
+        ExitTime := ExitTime + 1;
+      end;
+
+      // 4. Рассчитываем длительность в минутах
+      DurationMinutes := Round((ExitTime - EntryTime) * 24 * 60);
+
+      // Проверяем корректность расчета
+      if DurationMinutes < 0 then DurationMinutes := 0;
+      if DurationMinutes > 1440 then DurationMinutes := 1440; // Максимум 24 часа
+
+      // 5. Обновляем запись в базе данных
+      Query.SQL.Text :=
         'UPDATE visits ' +
         'SET exit_time = :exit_time, ' +
         'duration_minutes = :duration ' +
         'WHERE id = :id';
 
-     Query.ParamByName('exit_time').AsString := FormatDateTime('hh:nn:ss', ExitTime);
-      Query.ParamByName('duration').AsInteger := 60; // Пока заглушка - потом рассчитаем
+      Query.ParamByName('exit_time').AsString := FormatDateTime('hh:nn:ss', ExitTime);
+      Query.ParamByName('duration').AsInteger := DurationMinutes;
       Query.ParamByName('id').AsInteger := VisitID;
 
-         Query.ExecSQL;
+      Query.ExecSQL;
 
-          ShowMessage('Выход успешно зарегистрирован!');
+      // 6. Показываем информацию пользователю
+      ShowMessage(
+        '✅ Выход успешно зарегистрирован!' + sLineBreak +
+        'Клиент: ' + FDQueryVisits.FieldByName('full_name').AsString + sLineBreak +
+        'Время входа: ' + FormatDateTime('hh:nn:ss', EntryTime) + sLineBreak +
+        'Время выхода: ' + FormatDateTime('hh:nn:ss', ExitTime) + sLineBreak +
+        'Длительность тренировки: ' + IntToStr(DurationMinutes) + ' минут' + sLineBreak +
+        '    (' + FormatFloat('0.0', DurationMinutes/60) + ' часов)'
+      );
 
-           LoadVisits;
-     finally
-       Query.Free;
-     end;
+      // 7. Обновляем список посещений
+      LoadVisits;
+
+    finally
+      Query.Free;
+    end;
+
   except
     on E: Exception do
     begin
-      ShowMessage('Ошибка: ' + E.Message);
+      ShowMessage('Ошибка при регистрации выхода: ' + E.Message);
     end;
   end;
-
 end;
-
 //procedure TformMain.LoadSubscriptions;
 //begin
 //
