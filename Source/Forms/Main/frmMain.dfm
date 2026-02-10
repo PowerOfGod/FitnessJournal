@@ -84,7 +84,7 @@ object formMain: TformMain
     Top = 29
     Width = 956
     Height = 511
-    ActivePage = tsVisits
+    ActivePage = tsClients
     Align = alClient
     TabOrder = 1
     ExplicitWidth = 954
@@ -104,6 +104,7 @@ object formMain: TformMain
         TitleFont.Height = -12
         TitleFont.Name = 'Segoe UI'
         TitleFont.Style = []
+        OnDblClick = DBGridClientsDblClick
       end
     end
     object tsSubscription: TTabSheet

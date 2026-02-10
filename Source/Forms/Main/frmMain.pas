@@ -57,15 +57,19 @@ type
     procedure LoadSubscription;
     procedure LoadVisits;
     procedure btnRefreshClick(Sender: TObject);
+      procedure EditClient(ClientID: Integer);                 // Новый метод
+    procedure DeleteClient(ClientID: Integer);
 ////    procedure LoadSubscriptions;
 ////    procedure LoadVisits;
     procedure PageControl1Change(Sender: TObject);
     procedure LoadStatistics;
     procedure DBGridVisitsDblClick(Sender: TObject);
+    procedure DBGridClientsDblClick(Sender: TObject);
   private
     { Private declarations }
     FDBPath: string;
   public
+  
     { Public declarations }
   end;
 
@@ -77,6 +81,30 @@ implementation
 
 
 {$R *.dfm}
+
+
+procedure TformMain.EditClient(ClientID: Integer);
+begin
+    ShowMessage('Hi babes');
+end;
+
+procedure TformMain.DeleteClient(ClientID: Integer);
+begin
+  if MessageDlg('Вы уверены, что хотите удалить клиента?',
+    mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+  begin
+    try
+      // Пример удаления через FDConnection (через ваш модуль DB)
+      DB.GetConnection.ExecSQL('DELETE FROM clients WHERE id = :id', [ClientID]);
+      LoadClients; // Обновляем сетку
+      ShowMessage('Клиент удален');
+    except
+      on E: Exception do
+        ShowMessage('Ошибка при удалении: ' + E.Message);
+    end;
+  end;
+end;
+
 
 procedure TformMain.FormCreate(Sender: TObject);
 begin
@@ -393,6 +421,32 @@ begin
   end;
 end;
 
+procedure TformMain.DBGridClientsDblClick(Sender: TObject);
+begin
+  if FDQueryClients.IsEmpty then
+  begin
+    ShowMessage('Нет данных в таблице!');
+    Exit;
+  end;
+
+  var ClientID := FDQueryClients.FieldByName('id').AsInteger;
+  var ClientName := FDQueryClients.FieldByName('full_name').AsString;
+  var this := Self;
+  
+  var Res := MessageDlg(
+    'Выберите действие для клиента:' + sLineBreak + '«' + ClientName + '»',
+    mtConfirmation, 
+    [mbYes, mbNo, mbCancel], 
+    0
+  );
+
+  case Res of
+    mrYes:    EditClient(ClientID);     // Редактировать
+    mrNo:     DeleteClient(ClientID);   // Удалить
+    mrCancel: ;                         // Ничего не делать
+  end;
+end;
+
 
 procedure TformMain.DBGridVisitsDblClick(Sender: TObject);
 begin
@@ -538,13 +592,6 @@ end;
 //begin
 //
 //end;
-
-
-
-
-
-
-
 
 
 end.
