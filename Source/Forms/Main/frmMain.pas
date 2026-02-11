@@ -11,7 +11,7 @@ uses
   FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
   FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat,
   FireDAC.Phys.SQLiteDef, FireDAC.UI.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool,
-  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait;
+  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait, System.UITypes;
 
 type
   TformMain = class(TForm)
@@ -59,6 +59,8 @@ type
     procedure btnRefreshClick(Sender: TObject);
       procedure EditClient(ClientID: Integer);                 // Новый метод
     procedure DeleteClient(ClientID: Integer);
+    procedure SoftDeleteClient(ClientID: Integer; ClientName: String);
+    procedure HardDeleteClient(ClientID: Integer; ClientName: String);
 ////    procedure LoadSubscriptions;
 ////    procedure LoadVisits;
     procedure PageControl1Change(Sender: TObject);
@@ -89,27 +91,260 @@ begin
 end;
 
 procedure TformMain.DeleteClient(ClientID: Integer);
+var
+  Query: TFDQuery;
+  ClientName: string;
+  HasActiveSubscriptions: Boolean;
+  HasVisits: Boolean;
 begin
-  if MessageDlg('Вы уверены, что хотите удалить клиента?',
-    mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+
+  if not DB.IsConnected then
   begin
+     ShowMessage('Нет подключенияя к базе данных!');
+     Exit;
+  end;
+
+      Query:= TFDQuery.Create(nil);
     try
-      // Пример удаления через FDConnection (через ваш модуль DB)
-      DB.GetConnection.ExecSQL('DELETE FROM clients WHERE id = :id', [ClientID]);
-      LoadClients; // Обновляем сетку
-      ShowMessage('Клиент удален');
+
+      Query.Connection := DB.GetConnection;
+
+      Query.SQL.Text := 'SELECT full_name FROM clients WHERE id = :id';
+      Query.ParamByName('id').AsInteger := ClientID;
+      Query.Open;
+
+      if Query.Eof then
+      begin
+        ShowMessage('Клиент не найден!');
+        Exit; 
+      end;
+
+        ClientName := Query.FieldByName('full_name').AsString;
+        Query.Close;
+
+        Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM subscriptions ' +
+        'WHERE client_id = :id AND is_active = 1 ' +
+        'AND date(end_date) >= date(''now'')';
+        Query.ParamByName('id').AsInteger := ClientID;
+        Query.Open;
+
+        HasActiveSubscriptions  := Query.FieldByName('cnt').AsInteger > 0;
+        Query.Close;
+
+         Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM visits ' +
+        'WHERE client_id = :id';
+        Query.ParamByName('id').AsInteger := ClientID;
+        Query.Open;
+
+        HasVisits  := Query.FieldByName('cnt').AsInteger > 0;
+        Query.Close;
+
+         var WarningMsg := 'ВНИМАНИЕ! Вы собираетесь удалить клиента:' + sLineBreak +
+      sLineBreak +
+      'Клиент: ' + ClientName + sLineBreak +
+      'ID: ' + IntToStr(ClientID) + sLineBreak +
+      sLineBreak;
+
+    if HasActiveSubscriptions then
+      WarningMsg := WarningMsg +
+        '⚠ У клиента есть активные абонементы!' + sLineBreak;
+    
+    if HasVisits then
+      WarningMsg := WarningMsg + 
+        '⚠ У клиента есть история посещений!' + sLineBreak;
+    
+    WarningMsg := WarningMsg + sLineBreak +
+      'Выберите действие:' + sLineBreak + sLineBreak +
+      'Да    - Мягкое удаление (деактивация)' + sLineBreak +
+      'Нет   - Полное удаление (опасно!)' + sLineBreak +
+      'Отмена - Отменить удаление';
+
+          var Res := MessageDlg(
+      WarningMsg,
+      mtWarning,
+      [mbYes, mbNo, mbCancel],
+      0
+    );
+
+    case Res of
+      mrYes:    SoftDeleteClient(ClientID, ClientName);  // Мягкое удаление
+      mrNo:     HardDeleteClient(ClientID, ClientName);   // Полное удаление
+      mrCancel: ShowMessage('Удаление отменено.');        // Отмена
+    end;
+
+
+        finally
+          Query.Free;
+        end;
+
+      end;
+
+      procedure TformMain.SoftDeleteClient(ClientID: Integer; ClientName: string);
+var
+  Query: TFDQuery;
+begin
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := DB.GetConnection;
+    
+    // Начинаем транзакцию
+    Query.Connection.StartTransaction;
+    
+    try
+      // 1. Деактивируем клиента
+      Query.SQL.Text := 
+        'UPDATE clients SET is_active = 0, ' +
+        'deactivation_date = date(''now'') ' +
+        'WHERE id = :id';
+      Query.ParamByName('id').AsInteger := ClientID;
+      Query.ExecSQL;
+      
+      // 2. Деактивируем все активные абонементы
+      Query.SQL.Text := 
+        'UPDATE subscriptions SET is_active = 0 ' +
+        'WHERE client_id = :id AND is_active = 1';
+      Query.ParamByName('id').AsInteger := ClientID;
+      Query.ExecSQL;
+      
+      // Фиксируем транзакцию
+      Query.Connection.Commit;
+      
+      ShowMessage(
+        '✅ Клиент успешно деактивирован!' + sLineBreak +
+        sLineBreak +
+        'Клиент: ' + ClientName + sLineBreak +
+        'ID: ' + IntToStr(ClientID) + sLineBreak +
+        sLineBreak +
+        '▪ Статус: НЕАКТИВЕН' + sLineBreak +
+        '▪ Абонементы: деактивированы' + sLineBreak +
+        '▪ История посещений: сохранена'
+      );
+      
+      // Обновляем список клиентов (показываем только активных)
+      LoadClients;
+      
     except
       on E: Exception do
-        ShowMessage('Ошибка при удалении: ' + E.Message);
+      begin
+        Query.Connection.Rollback;
+        ShowMessage('❌ Ошибка при деактивации:' + sLineBreak + E.Message);
+      end;
     end;
+    
+  finally
+    Query.Free;
   end;
 end;
 
-
-procedure TformMain.FormCreate(Sender: TObject);
+   procedure TformMain.HardDeleteClient(ClientID: Integer; ClientName: string);
+var
+  Query: TFDQuery;
+  VisitCount, SubCount: Integer;
 begin
+  // Дополнительное подтверждение с подсчетом записей
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := DB.GetConnection;
+    
+    // Получаем количество связанных записей
+    Query.SQL.Text := 
+      'SELECT ' +
+      '(SELECT COUNT(*) FROM visits WHERE client_id = :id) as visits, ' +
+      '(SELECT COUNT(*) FROM subscriptions WHERE client_id = :id) as subs';
+    Query.ParamByName('id').AsInteger := ClientID;
+    Query.Open;
+    
+    VisitCount := Query.FieldByName('visits').AsInteger;
+    SubCount := Query.FieldByName('subs').AsInteger;
+    Query.Close;
+    
+    // Финальное подтверждение
+    if MessageDlg(
+      '⚠ ПОЛНОЕ УДАЛЕНИЕ ⚠' + sLineBreak + sLineBreak +
+      'Клиент: ' + ClientName + sLineBreak +
+      'ID: ' + IntToStr(ClientID) + sLineBreak +
+      sLineBreak +
+      'Будет удалено:' + sLineBreak +
+      '• Посещений: ' + IntToStr(VisitCount) + sLineBreak +
+      '• Абонементов: ' + IntToStr(SubCount) + sLineBreak +
+      sLineBreak +
+      'ЭТО ДЕЙСТВИЕ НЕЛЬЗЯ ОТМЕНИТЬ!' + sLineBreak +
+      sLineBreak +
+      'Введите "DELETE" для подтверждения:',
+      mtError,
+      [mbOK, mbCancel],
+      0) <> mrOK then
+    begin
+      ShowMessage('Полное удаление отменено.');
+      Exit;
+    end;
+    
+    // Запрос подтверждения строкой
+    var ConfirmText := InputBox('Подтверждение удаления', 
+      'Введите "DELETE" для подтверждения:', '');
+      
+    if ConfirmText <> 'DELETE' then
+    begin
+      ShowMessage('Неверное подтверждение. Удаление отменено.');
+      Exit;
+    end;
+    
+  finally
+    Query.Free;
+  end;
+  
+  // САМО УДАЛЕНИЕ (в отдельной транзакции)
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := DB.GetConnection;
+    Query.Connection.StartTransaction;
+    
+    try
+      // Удаляем посещения
+      Query.SQL.Text := 'DELETE FROM visits WHERE client_id = :id';
+      Query.ParamByName('id').AsInteger := ClientID;
+      Query.ExecSQL;
+      
+      // Удаляем абонементы
+      Query.SQL.Text := 'DELETE FROM subscriptions WHERE client_id = :id';
+      Query.ParamByName('id').AsInteger := ClientID;
+      Query.ExecSQL;
+      
+      // Удаляем клиента
+      Query.SQL.Text := 'DELETE FROM clients WHERE id = :id';
+      Query.ParamByName('id').AsInteger := ClientID;
+      Query.ExecSQL;
+      
+      Query.Connection.Commit;
+      
+      ShowMessage(
+        '🗑️ Клиент ПОЛНОСТЬЮ удален!' + sLineBreak +
+        sLineBreak +
+        'Клиент: ' + ClientName + sLineBreak +
+        'ID: ' + IntToStr(ClientID) + sLineBreak +
+        sLineBreak +
+        '✅ Все данные удалены из базы.'
+      );
+      
+      LoadClients;
+      
+    except
+      on E: Exception do
+      begin
+        Query.Connection.Rollback;
+        ShowMessage('❌ Ошибка при удалении:' + sLineBreak + E.Message);
+      end;
+    end;
+    
+  finally
+    Query.Free;
+  end;
+end;
 
-// 1. Путь к БД рядом с exe
+      procedure TformMain.FormCreate(Sender: TObject);
+      begin
+
+        // 1. Путь к БД рядом с exe
   FDBPath := GetDBPath;
 
   // 2. Проверка файла
@@ -595,6 +830,3 @@ end;
 
 
 end.
-
-
-
