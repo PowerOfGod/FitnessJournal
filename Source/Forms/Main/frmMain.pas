@@ -193,8 +193,7 @@ begin
     try
       // 1. Деактивируем клиента
       Query.SQL.Text := 
-        'UPDATE clients SET is_active = 0, ' +
-        'deactivation_date = date(''now'') ' +
+        'UPDATE clients SET is_active = 0 ' +
         'WHERE id = :id';
       Query.ParamByName('id').AsInteger := ClientID;
       Query.ExecSQL;
@@ -512,6 +511,7 @@ begin
       'CAST(membership_type AS VARCHAR(50)) AS membership_type, ' +
       'is_active ' +
       'FROM clients ' +
+      'WHERE is_active = 1 ' +        // ← ДОБАВИТЬ ЭТУ СТРОКУ!
       'ORDER BY full_name';
 
 
