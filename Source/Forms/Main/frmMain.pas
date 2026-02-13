@@ -86,8 +86,35 @@ implementation
 
 
 procedure TformMain.EditClient(ClientID: Integer);
+var
+  ClientForm: TfrmClientEdit1;
+  Query: TFDQuery;
 begin
-    ShowMessage('Hi babes');
+    ShowMessage('Редактирование клиента с ID: ' + IntToStr(ClientID));
+    if not DB.IsConnected then
+  begin
+     ShowMessage('Нет подключенияя к базе данных!');
+     Exit;
+  end;
+
+  ClientForm := TfrmClientEdit1.Create(Self);
+  try
+   ClientForm.LoadDataForEdit(ClientID);
+    ClientForm.Caption := 'Редактировать клиента';
+
+     if ClientForm.ShowModal  = mrOk then
+     begin
+       ShowMessage('Данные клиента обновлены!');
+       LoadClients;
+     end
+     else
+     begin
+      ShowMessage('Редактирование отменено');
+    end;
+
+  finally
+    ClientForm.Free;
+  end;
 end;
 
 procedure TformMain.DeleteClient(ClientID: Integer);
@@ -587,7 +614,7 @@ begin
 
   ClientForm := TfrmClientEdit1.Create(Self);
   try
-    ClientForm.IsEditMode := False;
+
     ClientForm.Caption := 'Добавить нового клиента';
 
     // Просто показываем форму

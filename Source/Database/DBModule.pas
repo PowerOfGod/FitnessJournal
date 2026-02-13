@@ -19,7 +19,8 @@ type
   public
     constructor Create;
     destructor Destroy; override;
-
+    function UpdateClient(ClientID: Integer; FullName, Phone, Email,
+      MembershipType: string; BirthDate: TDate): Boolean;
     function ConnectToDB(const DBPath: string): Boolean;
     function DisconnectFromDB: Boolean;
     function IsConnected: Boolean;
@@ -574,6 +575,75 @@ begin
     raise;
   end;
 end;
+
+
+function TDBModule.UpdateClient(ClientID: Integer; FullName, Phone, Email, 
+  MembershipType: string; BirthDate: TDate): Boolean;
+var
+  Query: TFDQuery;
+begin
+  Result := False;
+  
+  
+  if not FIsConnected then
+    raise Exception.Create('Нет подключения к базе данных');
+  
+  
+  if ClientID <= 0 then
+    raise Exception.Create('Неверный ID клиента');
+    
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    
+  
+    if not FConnection.InTransaction then
+      FConnection.StartTransaction;
+    
+    
+    Query.SQL.Text := 
+      'UPDATE clients SET ' +
+      'full_name = :full_name, ' +
+      'phone = :phone, ' +
+      'email = :email, ' +
+      'birth_date = :birth_date, ' +
+      'membership_type = :membership_type ' +
+      'WHERE id = :id';
+    
+    
+    Query.ParamByName('full_name').AsString := FullName;
+    Query.ParamByName('phone').AsString := Phone;
+    Query.ParamByName('email').AsString := Email;
+    Query.ParamByName('birth_date').AsDateTime := BirthDate;
+    Query.ParamByName('membership_type').AsString := MembershipType;
+    Query.ParamByName('id').AsInteger := ClientID;
+    
+    
+    Query.ExecSQL;
+    
+  
+    Result := Query.RowsAffected > 0;
+    
+    
+    if FConnection.InTransaction then
+      FConnection.Commit;
+      
+  except
+    on E: Exception do
+    begin
+      
+      if FConnection.InTransaction then
+        FConnection.Rollback;
+      
+      
+      raise Exception.Create('Ошибка обновления клиента: ' + E.Message);
+    end;
+  end;  
+  
+ 
+  Query.Free;
+  
+end;  
 
 initialization
 

@@ -1,10 +1,17 @@
-unit frmClientEdit;
+Ôªøunit frmClientEdit;
 
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, DBModule;
+    Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ToolWin, Vcl.Menus,
+  Data.DB, Vcl.Grids, Vcl.DBGrids, Vcl.StdCtrls, Vcl.ExtCtrls, frmVisitEdit, frmSubscriptionEdit, DBModule, AppConsts,
+  FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
+  FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf,
+  FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
+  FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat,
+  FireDAC.Phys.SQLiteDef, FireDAC.UI.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool,
+  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait, System.UITypes;
 
 type
   TfrmClientEdit1 = class(TForm)
@@ -22,6 +29,7 @@ type
     btnCancel: TButton;
 
 
+    procedure LoadClientData(ClientID: Integer);
     procedure btnSaveClientClick(Sender: TObject);
     procedure btnCancelClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -37,6 +45,7 @@ function GetBirthDate: TDate;
     procedure ClearForm;
     { Private declarations }
   public
+  procedure LoadDataForEdit(ClientID: Integer);
   property ClientFullName: string read GetFullName;
 property ClientPhone: string read GetPhone;
 property ClientEmail: string read GetEmail;
@@ -53,6 +62,13 @@ var
 implementation
 
 {$R *.dfm}
+
+procedure TfrmClientEdit1.LoadDataForEdit(ClientID: Integer);
+begin
+  FIsEditMode := True;
+  FClientID := ClientID;
+  LoadClientData(ClientID);
+end;
 
 function TfrmClientEdit1.GetFullName: string;
 begin
@@ -85,13 +101,14 @@ var
   FullName, Phone, Email, MembershipType: string;
   BirthDate: TDate;
   IsActive: Boolean;
-  ClientID: Integer;
+  NewClientID: Integer;
+  Success: Boolean;
 begin
-  // ÿ¿√ 1: ¬¿À»ƒ¿÷»ﬂ ƒ¿ÕÕ€’
+  // –í–ê–õ–ò–î–ê–¶–ò–Ø –î–ê–ù–ù–´–•
   FullName := Trim(Edit1.Text);
   if FullName = '' then
   begin
-    ShowMessage('¬‚Â‰ËÚÂ ‘»Œ ÍÎËÂÌÚ‡!');
+    ShowMessage('–í–≤–µ–¥–∏—Ç–µ –§–ò–û –∫–ª–∏–µ–Ω—Ç–∞!');
     Edit1.SetFocus;
     Exit;
   end;
@@ -99,102 +116,166 @@ begin
   Phone := Trim(Edit2.Text);
   if Phone = '' then
   begin
-    ShowMessage('¬‚Â‰ËÚÂ ÚÂÎÂÙÓÌ ÍÎËÂÌÚ‡!');
+    ShowMessage('–í–≤–µ–¥–∏—Ç–µ —Ç–µ–ª–µ—Ñ–æ–Ω –∫–ª–∏–µ–Ω—Ç–∞!');
     Edit2.SetFocus;
     Exit;
   end;
 
-  // ÿ¿√ 2: —¡Œ– ƒ¿ÕÕ€’
+  // –°–ë–û–† –î–ê–ù–ù–´–•
   Email := Trim(Edit3.Text);
   MembershipType := ComboBox1.Text;
   BirthDate := DateTimePicker1.Date;
   IsActive := True;
 
-  // ÿ¿√ 3: —Œ’–¿Õ≈Õ»≈ ¬ ¡¿«≈ ƒ¿ÕÕ€’
   try
-    if DB.IsConnected then
+    if not DB.IsConnected then
     begin
-      // –≈¿À‹ÕŒ≈ —Œ’–¿Õ≈Õ»≈!
-      ClientID := DB.AddClient(
-        FullName,           // ‘»Œ
-        Email,              // Email
-        MembershipType,     // “ËÔ ‡·ÓÌÂÏÂÌÚ‡
-        Now,                // ƒ‡Ú‡ Â„ËÒÚ‡ˆËË
-        Phone,              // “ÂÎÂÙÓÌ
-        IsActive,           // ¿ÍÚË‚ÂÌ
-        BirthDate           // ƒ‡Ú‡ ÓÊ‰ÂÌËˇ
+      ShowMessage('–û—à–∏–±–∫–∞: –Ω–µ—Ç –ø–æ–¥–∫–ª—é—á–µ–Ω–∏—è –∫ –±–∞–∑–µ –¥–∞–Ω–Ω—ã—Ö!');
+      Exit;
+    end;
+
+    // –ü–†–û–í–ï–†–Ø–ï–ú –†–ï–ñ–ò–ú –†–ê–ë–û–¢–´
+    if FIsEditMode and (FClientID > 0) then
+    begin
+      // –†–ï–ñ–ò–ú –†–ï–î–ê–ö–¢–ò–†–û–í–ê–ù–ò–Ø - –æ–±–Ω–æ–≤–ª—è–µ–º —Å—É—â–µ—Å—Ç–≤—É—é—â–µ–≥–æ –∫–ª–∏–µ–Ω—Ç–∞
+      Success := DB.UpdateClient(
+        FClientID,        // ID –∫–ª–∏–µ–Ω—Ç–∞ (–Ω–µ –º–µ–Ω—è–µ—Ç—Å—è!)
+        FullName,         // –ù–æ–≤–æ–µ –§–ò–û
+        Phone,            // –ù–æ–≤—ã–π —Ç–µ–ª–µ—Ñ–æ–Ω
+        Email,            // –ù–æ–≤—ã–π email
+        MembershipType,   // –ù–æ–≤—ã–π —Ç–∏–ø —á–ª–µ–Ω—Å—Ç–≤–∞
+        BirthDate         // –ù–æ–≤–∞—è –¥–∞—Ç–∞ —Ä–æ–∂–¥–µ–Ω–∏—è
       );
 
-      if ClientID > 0 then
+      if Success then
       begin
-        // —Óı‡ÌˇÂÏ ID ÍÎËÂÌÚ‡
-        FClientID := ClientID;
-
-        // «‡Í˚‚‡ÂÏ ÙÓÏÛ Ò ÂÁÛÎ¸Ú‡ÚÓÏ mrOk
         ModalResult := mrOk;
-
-        // —ÓÓ·˘ÂÌËÂ Ó· ÛÒÔÂıÂ
-        ShowMessage(' ÎËÂÌÚ ÛÒÔÂ¯ÌÓ ÒÓı‡ÌÂÌ!' + #13#10 +
-                   'ID: ' + IntToStr(ClientID));
+        ShowMessage('‚úÖ –ö–ª–∏–µ–Ω—Ç —É—Å–ø–µ—à–Ω–æ –æ–±–Ω–æ–≤–ª–µ–Ω! ID: ' + IntToStr(FClientID));
       end
       else
-      begin
-        ShowMessage('Œ¯Ë·Í‡: ÌÂ Û‰‡ÎÓÒ¸ ÒÓı‡ÌËÚ¸ ÍÎËÂÌÚ‡');
-      end;
+        ShowMessage('‚ùå –û—à–∏–±–∫–∞: –Ω–µ —É–¥–∞–ª–æ—Å—å –æ–±–Ω–æ–≤–∏—Ç—å –∫–ª–∏–µ–Ω—Ç–∞');
     end
     else
     begin
-      ShowMessage('Œ¯Ë·Í‡: ÌÂÚ ÔÓ‰ÍÎ˛˜ÂÌËˇ Í ·‡ÁÂ ‰‡ÌÌ˚ı!');
+      // –†–ï–ñ–ò–ú –î–û–ë–ê–í–õ–ï–ù–ò–Ø - —Å–æ–∑–¥–∞–µ–º –Ω–æ–≤–æ–≥–æ –∫–ª–∏–µ–Ω—Ç–∞
+      NewClientID := DB.AddClient(
+        FullName,
+        Email,
+        MembershipType,
+        Now,
+        Phone,
+        IsActive,
+        BirthDate
+      );
+
+      if NewClientID > 0 then
+      begin
+        FClientID := NewClientID;
+        ModalResult := mrOk;
+        ShowMessage('‚úÖ –ö–ª–∏–µ–Ω—Ç —É—Å–ø–µ—à–Ω–æ –¥–æ–±–∞–≤–ª–µ–Ω! ID: ' + IntToStr(NewClientID));
+      end
+      else
+      begin
+        ShowMessage('‚ùå –û—à–∏–±–∫–∞: –Ω–µ —É–¥–∞–ª–æ—Å—å –¥–æ–±–∞–≤–∏—Ç—å –∫–ª–∏–µ–Ω—Ç–∞');
+      end;
     end;
+
   except
     on E: Exception do
     begin
-      ShowMessage('Œ¯Ë·Í‡ ÒÓı‡ÌÂÌËˇ ÍÎËÂÌÚ‡: ' + E.Message);
+      ShowMessage('‚ùå –û—à–∏–±–∫–∞ —Å–æ—Ö—Ä–∞–Ω–µ–Ω–∏—è –∫–ª–∏–µ–Ω—Ç–∞: ' + E.Message);
     end;
   end;
 end;
 
-
 procedure TfrmClientEdit1.btnCancelClick(Sender: TObject);
 begin
-  // —Ô‡¯Ë‚‡ÂÏ ÔÓ‰Ú‚ÂÊ‰ÂÌËÂ
-  if MessageDlg('ŒÚÏÂÌËÚ¸ ‚‚Ó‰ ‰‡ÌÌ˚ı?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+  // –°–ø—Ä–∞—à–∏–≤–∞–µ–º –ø–æ–¥—Ç–≤–µ—Ä–∂–¥–µ–Ω–∏–µ
+  if MessageDlg('–û—Ç–º–µ–Ω–∏—Ç—å –≤–≤–æ–¥ –¥–∞–Ω–Ω—ã—Ö?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
   begin
-    ClearForm;  // Œ˜Ë˘‡ÂÏ ÙÓÏÛ
-    ModalResult := mrCancel;  // «‡Í˚‚‡ÂÏ Ò ÓÚÏÂÌÓÈ
+    ClearForm;  // –û—á–∏—â–∞–µ–º —Ñ–æ—Ä–º—É
+    ModalResult := mrCancel;  // –ó–∞–∫—Ä—ã–≤–∞–µ–º —Å –æ—Ç–º–µ–Ω–æ–π
   end;
 end;
 
-// ¬ FormCreate ËÌËˆË‡ÎËÁËÓ‚‡Ú¸ ÁÌ‡˜ÂÌËˇ
+// –í FormCreate –∏–Ω–∏—Ü–∏–∞–ª–∏–∑–∏—Ä–æ–≤–∞—Ç—å –∑–Ω–∞—á–µ–Ω–∏—è
 
-  procedure TfrmClientEdit1.FormCreate(Sender: TObject);
+procedure TfrmClientEdit1.FormCreate(Sender: TObject);
 begin
-  // »ÌËˆË‡ÎËÁ‡ˆËˇ ÔÂÂÏÂÌÌ˚ı
-  FIsEditMode := False;  // œÓ ÛÏÓÎ˜‡ÌË˛ - ÒÓÁ‰‡ÌËÂ ÌÓ‚Ó„Ó
-  FClientID := 0;        // ID = 0 ÁÌ‡˜ËÚ ÌÓ‚˚È ÍÎËÂÌÚ
 
-  // ”ÒÚ‡Ì‡‚ÎË‚‡ÂÏ ÚÂÍÛ˘Û˛ ‰‡ÚÛ ‚ DatePicker
+
+ ShowMessage('FormCreate: IsEditMode=' + BoolToStr(FIsEditMode, True) +
+              ', ClientID=' + IntToStr(FClientID));
+  // –ò–Ω–∏—Ü–∏–∞–ª–∏–∑–∞—Ü–∏—è –ø–µ—Ä–µ–º–µ–Ω–Ω—ã—Ö
+  FIsEditMode := False;  // –ü–æ —É–º–æ–ª—á–∞–Ω–∏—é - —Å–æ–∑–¥–∞–Ω–∏–µ –Ω–æ–≤–æ–≥–æ
+  FClientID := 0;        // ID = 0 –∑–Ω–∞—á–∏—Ç –Ω–æ–≤—ã–π –∫–ª–∏–µ–Ω—Ç
+
+  // –£—Å—Ç–∞–Ω–∞–≤–ª–∏–≤–∞–µ–º —Ç–µ–∫—É—â—É—é –¥–∞—Ç—É –≤ DatePicker
   DateTimePicker1.Date := Now;
 
-  // Œ˜Ë˘‡ÂÏ Ë Á‡ÔÓÎÌˇÂÏ ComboBox
+  // –û—á–∏—â–∞–µ–º –∏ –∑–∞–ø–æ–ª–Ω—è–µ–º ComboBox
   ComboBox1.Clear;
-  ComboBox1.Items.Add('–‡ÁÓ‚˚È');
-  ComboBox1.Items.Add('ÃÂÒˇ˜Ì˚È');
-  ComboBox1.Items.Add('√Ó‰Ó‚ÓÈ');
+  ComboBox1.Items.Add('–†–∞–∑–æ–≤—ã–π');
+  ComboBox1.Items.Add('–ú–µ—Å—è—á–Ω—ã–π');
+  ComboBox1.Items.Add('–ì–æ–¥–æ–≤–æ–π');
   ComboBox1.ItemIndex := 0;
 
-  // Œ˜Ë˘‡ÂÏ ÙÓÏÛ
-  ClearForm;
+  // –ï–°–õ–ò –≠–¢–û –†–ï–ñ–ò–ú –†–ï–î–ê–ö–¢–ò–†–û–í–ê–ù–ò–Ø - –ó–ê–ì–†–£–ñ–ê–ï–ú –î–ê–ù–ù–´–ï
+  if FIsEditMode and (FClientID > 0) then
+    LoadClientData(FClientID)
+  else
+    ClearForm;
 end;
 
 procedure TfrmClientEdit1.ClearForm;
 begin
-  // Œ˜Ë˘‡ÂÏ ‚ÒÂ ÔÓÎˇ ‚‚Ó‰‡
+  // –û—á–∏—â–∞–µ–º –≤—Å–µ –ø–æ–ª—è –≤–≤–æ–¥–∞
   Edit1.Text := '';
   Edit2.Text := '';
   Edit3.Text := '';
   DateTimePicker1.Date := Now;
   ComboBox1.ItemIndex := 0;
+end;
+
+
+procedure TfrmClientEdit1.LoadClientData(ClientID: Integer);
+var
+  Query: TFDQuery;
+begin
+  if not DB.IsConnected then Exit;
+
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := DB.GetConnection;
+
+    // –ß–∏—Ç–∞–µ–º –¥–∞–Ω–Ω—ã–µ –∫–ª–∏–µ–Ω—Ç–∞ –∏–∑ –ë–î
+    Query.SQL.Text :=
+      'SELECT full_name, phone, email, birth_date, membership_type ' +
+      'FROM clients WHERE id = :id';
+    Query.ParamByName('id').AsInteger := ClientID;
+    Query.Open;
+
+    if not Query.Eof then
+    begin
+      // –ó–∞–ø–æ–ª–Ω—è–µ–º –ø–æ–ª—è —Ñ–æ—Ä–º—ã
+      Edit1.Text := Query.FieldByName('full_name').AsString;
+      Edit2.Text := Query.FieldByName('phone').AsString;
+      Edit3.Text := Query.FieldByName('email').AsString;
+      DateTimePicker1.Date := Query.FieldByName('birth_date').AsDateTime;
+
+      // –£—Å—Ç–∞–Ω–∞–≤–ª–∏–≤–∞–µ–º —Ç–∏–ø —á–ª–µ–Ω—Å—Ç–≤–∞ –≤ ComboBox
+      var MembershipType := Query.FieldByName('membership_type').AsString;
+      for var i := 0 to ComboBox1.Items.Count - 1 do
+        if ComboBox1.Items[i] = MembershipType then
+        begin
+          ComboBox1.ItemIndex := i;
+          Break;
+        end;
+    end;
+
+  finally
+    Query.Free;
+  end;
 end;
 
 end.
