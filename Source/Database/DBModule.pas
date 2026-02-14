@@ -25,7 +25,7 @@ type
     function DisconnectFromDB: Boolean;
     function IsConnected: Boolean;
     function GetConnection: TFDConnection;
-
+     function HasActiveVisit(ClientID: Integer): Boolean;
     function ClientExists(ClientID: Integer): Boolean;
     function GetClientByID(ClientID: Integer): TFDQuery;
     function GetClients: TFDQuery;
@@ -91,6 +91,40 @@ begin
   FConnection.Params.Add('Synchronous=Normal');
   FConnection.Params.Add('SharedCache=False');
   FConnection.LoginPrompt := False;
+end;
+
+function TDBModule.HasActiveVisit(ClientID: Integer): Boolean;
+var
+  Query: TFDQuery;
+  Count: Integer;
+begin
+  Result := False;
+
+  if not FIsConnected then
+    Exit;
+
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+
+    // Простой подсчет
+    Query.SQL.Text :=
+      'SELECT COUNT(*) as cnt FROM visits ' +
+      'WHERE client_id = :client_id AND exit_time IS NULL';
+
+    Query.ParamByName('client_id').AsInteger := ClientID;
+    Query.Open;
+
+    Count := Query.FieldByName('cnt').AsInteger;
+    Result := Count > 0;
+
+    // Для отладки
+    ShowMessage('HasActiveVisit: клиент ID=' + IntToStr(ClientID) +
+                ', активных посещений=' + IntToStr(Count));
+
+  finally
+    Query.Free;
+  end;
 end;
 
 function TDBModule.ClientExists(ClientID: Integer): Boolean;

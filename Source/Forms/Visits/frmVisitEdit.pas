@@ -36,7 +36,7 @@ type
     procedure LoadClientInfo(ClientID: Integer);
 
   private
-
+    FMode: (modeEntry, modeExit);
     FClientID : Integer;
     FIsEntryRegistered : Boolean;
     FVisitID: Integer;
@@ -60,29 +60,71 @@ implementation
 
 
 
-
-
-
-
-
 procedure TfrmVisitEdit1.cbClientChange(Sender: TObject);
 begin
+  if cbClient.ItemIndex >= 0 then
+  begin
+    FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
+    LoadClientInfo(FClientID);
 
-       if cbClient.ItemIndex >= 0 then
-       begin
-          FClientID  := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
+    ShowMessage('Выбран клиент ID=' + IntToStr(FClientID) +
+                ', проверяем активное посещение...');
 
-          LoadClientInfo(FClientID);
-       end
-       else
-       begin
-         FClientID  := 0;
-         edtPhone.Text := '';
-         edtSubscription.Text := '';
-       end;
+    // ПРОВЕРЯЕМ АКТИВНОЕ ПОСЕЩЕНИЕ
+    if DB.HasActiveVisit(FClientID) then
+    begin
+      ShowMessage('ЕСТЬ активное посещение! Переключаем в режим выхода');
 
+      // Режим ВЫХОДА
+      FMode := modeExit;
 
+      // НАСТРОЙКА КНОПОК - ЭТО САМОЕ ВАЖНОЕ!
+      btnEntry.Enabled := False;
+      btnEntry.Caption := 'Вход (недоступен)';
 
+      btnExit.Enabled := True;
+      btnExit.Caption := 'ЗАВЕРШИТЬ ПОСЕЩЕНИЕ';
+
+      // Блокируем поля
+      cbClient.Enabled := False;
+      cbTrainer.Enabled := False;
+      memoNotes.ReadOnly := True;
+
+      ShowMessage('Кнопка Входа отключена, кнопка Выхода активна');
+    end
+    else
+    begin
+      ShowMessage('НЕТ активного посещения. Режим входа');
+
+      // Режим ВХОДА
+      FMode := modeEntry;
+
+      // НАСТРОЙКА КНОПОК
+      btnEntry.Enabled := True;
+      btnEntry.Caption := 'ВХОД';
+
+      btnExit.Enabled := False;
+      btnExit.Caption := 'Выход';
+
+      // Разблокируем поля
+      cbClient.Enabled := True;
+      cbTrainer.Enabled := True;
+      memoNotes.ReadOnly := False;
+    end;
+  end
+  else
+  begin
+    // Ничего не выбрано
+    FClientID := 0;
+    edtPhone.Text := '';
+    edtSubscription.Text := '';
+
+    FMode := modeEntry;
+    btnEntry.Enabled := True;
+    btnEntry.Caption := 'Вход';
+    btnExit.Enabled := False;
+    btnExit.Caption := 'Выход';
+  end;
 end;
 
 procedure TfrmVisitEdit1.LoadClientInfo(ClientID: Integer);
@@ -136,7 +178,7 @@ begin
   FClientID := 0;
   FVisitID  := 0;
   FIsEntryRegistered := False;
-
+  FMode := modeEntry;
   LoadClients;
 
 
@@ -191,9 +233,6 @@ begin
   end;
 end;
 
-
-
-
 procedure TfrmVisitEdit1.btnEntryClick(Sender: TObject);
 var
   VisitDate: TDate;
@@ -202,7 +241,14 @@ var
   TrainerName: string;
   Notes: string;
 begin
-  // 1. Проверка выбора клиента
+  // Дополнительная проверка - если мы в режиме выхода, кнопка должна быть неактивна
+  if FMode = modeExit then
+  begin
+    ShowMessage('Сначала завершите текущее посещение!');
+    Exit;
+  end;
+
+  // Проверка выбора клиента
   if cbClient.ItemIndex < 0 then
   begin
     ShowMessage('Выберите клиента!');
@@ -210,7 +256,7 @@ begin
     Exit;
   end;
 
-  // 2. Проверка выбора тренера
+  // Проверка выбора тренера
   if cbTrainer.ItemIndex < 0 then
   begin
     ShowMessage('Выберите тренера!');
@@ -218,19 +264,29 @@ begin
     Exit;
   end;
 
-  // 3. Подготавливаем данные
+  // ПОСЛЕДНЯЯ ПРОВЕРКА - вдруг кто-то создал посещение параллельно
+  if DB.HasActiveVisit(FClientID) then
+  begin
+    ShowMessage('У клиента уже есть активное посещение!' + sLineBreak +
+                'Завершите его через кнопку "Выход"');
+    // Обновим интерфейс
+    cbClientChange(nil); // Перезагрузим состояние клиента
+    Exit;
+  end;
+
+  // Получаем ID клиента
+  FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
+
+  // Подготавливаем данные
   VisitDate := Date;
   EntryTime := Time;
-  ExitTime := 0; // 0 = NULL (клиент еще не вышел)
+  ExitTime := 0;
   TrainerName := cbTrainer.Text;
   Notes := memoNotes.Text;
 
-  // 4. Получаем ID клиента
-  FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
-
-  // 5. Сохраняем в БД
+  // Сохраняем в БД
   try
-    FVisitID := DB.AddVisit(  // ← ВАЖНО: сохраняем возвращаемый ID!
+    FVisitID := DB.AddVisit(
       FClientID,
       VisitDate,
       EntryTime,
@@ -241,28 +297,34 @@ begin
 
     if FVisitID > 0 then
     begin
-      // Успешно сохранено
       FEntryTime := EntryTime;
       FIsEntryRegistered := True;
 
+      // Переключаем в режим выхода
+      FMode := modeExit;
+
       // Меняем интерфейс
       btnEntry.Enabled := False;
+      btnEntry.Caption := 'Вход (недоступен)';
       btnExit.Enabled := True;
+      btnExit.Caption := 'Завершить посещение';
+
       cbClient.Enabled := False;
       cbTrainer.Enabled := False;
       memoNotes.ReadOnly := True;
 
-      // Сообщение об успехе
       ShowMessage(
         '✅ Вход зафиксирован!' + sLineBreak +
         'Клиент: ' + cbClient.Text + sLineBreak +
         'Время: ' + FormatDateTime('hh:nn:ss', EntryTime) + sLineBreak +
-        'ID посещения: ' + IntToStr(FVisitID)
+        'ID посещения: ' + IntToStr(FVisitID) + sLineBreak +
+        sLineBreak +
+        'Теперь нажмите "Завершить посещение", когда клиент будет уходить'
       );
     end
     else
     begin
-      ShowMessage('❌ Ошибка: не удалось сохранить посещение (ID <= 0)');
+      ShowMessage('❌ Ошибка: не удалось сохранить посещение');
     end;
 
   except
@@ -275,34 +337,62 @@ end;
 
 
 procedure TfrmVisitEdit1.btnExitClick(Sender: TObject);
+var
+  Query: TFDQuery;
+  ActiveVisitID: Integer;
+  EntryTime: TTime;
 begin
-  if FIsEntryRegistered = False then
+  // Проверяем выбран ли клиент
+  if cbClient.ItemIndex < 0 then
   begin
-    ShowMessage('Вы не зарегистрированны! Введите данные и войдите)');
+    ShowMessage('Выберите клиента!');
     Exit;
-  end
-  else
-  begin
-      ModalResult := mrOk;
   end;
 
+  // Ищем активное посещение прямо сейчас
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := DB.GetConnection;
+    Query.SQL.Text :=
+      'SELECT id, entry_time FROM visits ' +
+      'WHERE client_id = ' + IntToStr(FClientID) +
+      ' AND exit_time IS NULL';
+    Query.Open;
 
+    if Query.Eof then
+    begin
+      ShowMessage('Активное посещение не найдено!');
+      Exit;
+    end;
 
+    // Нашли активное посещение
+    ActiveVisitID := Query.FieldByName('id').AsInteger;
+    EntryTime := Query.FieldByName('entry_time').AsDateTime;
+
+    // Здесь код завершения посещения
+    ShowMessage('Нашли посещение ID=' + IntToStr(ActiveVisitID));
+
+  finally
+    Query.Free;
+  end;
 end;
 
 procedure TfrmVisitEdit1.btnCancelClick(Sender: TObject);
 begin
-  // Очистка формы
-  cbClient.ItemIndex := -1;
-  cbTrainer.Text := '';
-  edtPhone.Text := '';
-  edtSubscription.Text := '';
-  memoNotes.Text := '';
-
-  // Сброс состояния
-  FIsEntryRegistered := False;
-  btnEntry.Enabled := True;
-  btnExit.Enabled := False;
+  // Если мы в режиме выхода, спросим подтверждение
+  if FMode = modeExit then
+  begin
+    if MessageDlg('Посещение еще не завершено. Все равно закрыть?',
+                  mtConfirmation, [mbYes, mbNo], 0) = mrYes then
+    begin
+      ModalResult := mrCancel;
+    end;
+  end
+  else
+  begin
+    // Просто закрываем
+    ModalResult := mrCancel;
+  end;
 end;
 
 
