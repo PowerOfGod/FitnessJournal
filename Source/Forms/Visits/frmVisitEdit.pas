@@ -335,28 +335,38 @@ begin
   end;
 end;
 
-
 procedure TfrmVisitEdit1.btnExitClick(Sender: TObject);
 var
   Query: TFDQuery;
   ActiveVisitID: Integer;
   EntryTime: TTime;
+  ExitTime: TTime;
+  DurationMinutes: Integer;
+  EntryTimeStr: string;  // Добавили для преобразования
 begin
-  // Проверяем выбран ли клиент
+  // СНАЧАЛА проверяем выбран ли клиент
   if cbClient.ItemIndex < 0 then
   begin
     ShowMessage('Выберите клиента!');
     Exit;
   end;
 
-  // Ищем активное посещение прямо сейчас
+  // ПОТОМ получаем ID клиента
+  FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
+
+  // ПОТОМ получаем текущее время выхода
+  ExitTime := Time;  // ЭТО БЫЛО ПРОПУЩЕНО!
+
+  // Ищем активное посещение
   Query := TFDQuery.Create(nil);
   try
     Query.Connection := DB.GetConnection;
     Query.SQL.Text :=
       'SELECT id, entry_time FROM visits ' +
-      'WHERE client_id = ' + IntToStr(FClientID) +
-      ' AND exit_time IS NULL';
+      'WHERE client_id = :client_id ' +  // Используем параметры!
+      ' AND (exit_time IS NULL OR exit_time = '''')';
+
+    Query.ParamByName('client_id').AsInteger := FClientID;  // Правильно через параметры
     Query.Open;
 
     if Query.Eof then
@@ -367,10 +377,50 @@ begin
 
     // Нашли активное посещение
     ActiveVisitID := Query.FieldByName('id').AsInteger;
-    EntryTime := Query.FieldByName('entry_time').AsDateTime;
 
-    // Здесь код завершения посещения
-    ShowMessage('Нашли посещение ID=' + IntToStr(ActiveVisitID));
+    // Время входа нужно преобразовать правильно
+    EntryTimeStr := Query.FieldByName('entry_time').AsString;
+    try
+      EntryTime := StrToTime(EntryTimeStr);
+    except
+      ShowMessage('Ошибка преобразования времени входа: ' + EntryTimeStr);
+      Exit;
+    end;
+
+    Query.Close;
+
+    // Проверяем корректность времени
+    if ExitTime < EntryTime then
+    begin
+      ShowMessage('Время выхода раньше времени входа. Корректируем...');
+      ExitTime := ExitTime + 1;  // Добавляем 24 часа
+    end;
+
+    // Вычисляем длительность
+    DurationMinutes := Round((ExitTime - EntryTime) * 24 * 60);
+
+    // Обновляем запись
+    Query.SQL.Text :=
+      'UPDATE visits SET exit_time = :exit_time, ' +
+      'duration_minutes = :duration ' +
+      'WHERE id = :id';
+
+    Query.ParamByName('exit_time').AsString := FormatDateTime('hh:nn:ss', ExitTime);
+    Query.ParamByName('duration').AsInteger := DurationMinutes;
+    Query.ParamByName('id').AsInteger := ActiveVisitID;  // Используем ActiveVisitID, не VisitID!
+    Query.ExecSQL;
+
+    // Показываем результат
+    ShowMessage(
+      '✅ Посещение завершено!' + sLineBreak +
+      'ID: ' + IntToStr(ActiveVisitID) + sLineBreak +
+      'Вход: ' + TimeToStr(EntryTime) + sLineBreak +
+      'Выход: ' + TimeToStr(ExitTime) + sLineBreak +
+      'Длительность: ' + IntToStr(DurationMinutes) + ' минут'
+    );
+
+    // Закрываем форму
+    ModalResult := mrOk;
 
   finally
     Query.Free;

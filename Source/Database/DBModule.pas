@@ -108,15 +108,26 @@ begin
     Query.Connection := FConnection;
 
     // Простой подсчет
-    Query.SQL.Text :=
-      'SELECT COUNT(*) as cnt FROM visits ' +
-      'WHERE client_id = :client_id AND exit_time IS NULL';
+  Query.SQL.Text :=
+  'SELECT COUNT(*) as cnt FROM visits ' +
+  'WHERE client_id = :client_id ' +
+  'AND (exit_time IS NULL OR exit_time = '''')';
 
     Query.ParamByName('client_id').AsInteger := ClientID;
     Query.Open;
 
     Count := Query.FieldByName('cnt').AsInteger;
-    Result := Count > 0;
+    ShowMessage(IntToStr(Count));
+    if Count > 0 then
+    begin
+      Result := True;
+    end
+    else
+    begin
+        Result := false;
+    end;
+
+
 
     // Для отладки
     ShowMessage('HasActiveVisit: клиент ID=' + IntToStr(ClientID) +
