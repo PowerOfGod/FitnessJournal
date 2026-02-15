@@ -95,7 +95,6 @@ begin
   Result := DateTimePicker1.Date;
 end;
 
-
 procedure TfrmClientEdit1.btnSaveClientClick(Sender: TObject);
 var
   FullName, Phone, Email, MembershipType: string;
@@ -103,6 +102,11 @@ var
   IsActive: Boolean;
   NewClientID: Integer;
   Success: Boolean;
+  SubscriptionStartDate: TDate;
+  SubscriptionEndDate: TDate;
+  SubscriptionPrice: Double;
+  SubscriptionVisits: Integer;
+  SubscriptionRemaining: Integer;
 begin
   // ВАЛИДАЦИЯ ДАННЫХ
   FullName := Trim(Edit1.Text);
@@ -134,17 +138,73 @@ begin
       Exit;
     end;
 
+    // ЕСЛИ ВЫБРАН АБОНЕМЕНТ, ПОКАЗЫВАЕМ ПОДТВЕРЖДЕНИЕ
+    if MembershipType <> 'Без абонемента' then
+    begin
+      // Определяем параметры абонемента
+      case ComboBox1.ItemIndex of
+        1: // Разовый
+        begin
+          SubscriptionPrice := 500;
+          SubscriptionVisits := 1;
+          SubscriptionRemaining := 1;
+          SubscriptionEndDate := Date + 1; // на 1 день
+        end;
+        2: // Месячный
+        begin
+          SubscriptionPrice := 3000;
+          SubscriptionVisits := 0; // 0 = безлимит
+          SubscriptionRemaining := 0;
+          SubscriptionEndDate := Date + 30;
+        end;
+        3: // Квартальный
+        begin
+          SubscriptionPrice := 8000;
+          SubscriptionVisits := 0;
+          SubscriptionRemaining := 0;
+          SubscriptionEndDate := Date + 90;
+        end;
+        4: // Годовой
+        begin
+          SubscriptionPrice := 25000;
+          SubscriptionVisits := 0;
+          SubscriptionRemaining := 0;
+          SubscriptionEndDate := Date + 365;
+        end;
+      else
+        Exit;
+      end;
+
+      // ПОКАЗЫВАЕМ МОДАЛЬНОЕ ОКНО С ИНФОРМАЦИЕЙ
+      var Msg := '⚠ ПОДТВЕРЖДЕНИЕ АБОНЕМЕНТА ⚠' + sLineBreak + sLineBreak +
+                 'Клиент: ' + FullName + sLineBreak +
+                 'Абонемент: ' + MembershipType + sLineBreak +
+                 'Стоимость: ' + FormatFloat('0 руб.', SubscriptionPrice) + sLineBreak +
+                 'Действует до: ' + DateToStr(SubscriptionEndDate) + sLineBreak;
+
+      if SubscriptionVisits > 0 then
+        Msg := Msg + 'Количество посещений: ' + IntToStr(SubscriptionVisits) + sLineBreak;
+
+      Msg := Msg + sLineBreak + 'Добавить абонемент клиенту?';
+
+      if MessageDlg(Msg, mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
+      begin
+        ShowMessage('Абонемент не будет добавлен');
+        MembershipType := 'Без абонемента'; // Сбрасываем выбор
+      end;
+    end;
+
     // ПРОВЕРЯЕМ РЕЖИМ РАБОТЫ
     if FIsEditMode and (FClientID > 0) then
     begin
       // РЕЖИМ РЕДАКТИРОВАНИЯ - обновляем существующего клиента
       Success := DB.UpdateClient(
-        FClientID,        // ID клиента (не меняется!)
-        FullName,         // Новое ФИО
-        Phone,            // Новый телефон
-        Email,            // Новый email
-        MembershipType,   // Новый тип членства
-        BirthDate         // Новая дата рождения
+        FClientID,
+        FullName,
+        Phone,
+        Email,
+        MembershipType,
+        BirthDate
       );
 
       if Success then
@@ -171,6 +231,26 @@ begin
       if NewClientID > 0 then
       begin
         FClientID := NewClientID;
+
+        // ЕСЛИ НУЖНО ДОБАВИТЬ АБОНЕМЕНТ
+        if (MembershipType <> 'Без абонемента') and (ComboBox1.ItemIndex > 0) then
+        begin
+          var SubID := DB.AddSubscription(
+            NewClientID,
+            MembershipType,
+            Date, // start_date
+            SubscriptionEndDate,
+            SubscriptionPrice,
+            SubscriptionVisits,
+            SubscriptionRemaining
+          );
+
+          if SubID > 0 then
+            ShowMessage('✅ Абонемент успешно добавлен! ID: ' + IntToStr(SubID))
+          else
+            ShowMessage('❌ Ошибка при добавлении абонемента');
+        end;
+
         ModalResult := mrOk;
         ShowMessage('✅ Клиент успешно добавлен! ID: ' + IntToStr(NewClientID));
       end
@@ -202,21 +282,22 @@ end;
 
 procedure TfrmClientEdit1.FormCreate(Sender: TObject);
 begin
-
-
- ShowMessage('FormCreate: IsEditMode=' + BoolToStr(FIsEditMode, True) +
+  ShowMessage('FormCreate: IsEditMode=' + BoolToStr(FIsEditMode, True) +
               ', ClientID=' + IntToStr(FClientID));
-  // Инициализация переменных
-  FIsEditMode := False;  // По умолчанию - создание нового
-  FClientID := 0;        // ID = 0 значит новый клиент
 
-  // Устанавливаем текущую дату в DatePicker
+  // Инициализация переменных
+  FIsEditMode := False;
+  FClientID := 0;
+
+  // Устанавливаем текущую дату
   DateTimePicker1.Date := Now;
 
-  // Очищаем и заполняем ComboBox
+  // Заполняем ComboBox с типами членства
   ComboBox1.Clear;
+  ComboBox1.Items.Add('Без абонемента');  // Добавляем пустой вариант
   ComboBox1.Items.Add('Разовый');
   ComboBox1.Items.Add('Месячный');
+  ComboBox1.Items.Add('Квартальный');
   ComboBox1.Items.Add('Годовой');
   ComboBox1.ItemIndex := 0;
 

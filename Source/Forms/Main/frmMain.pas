@@ -422,8 +422,6 @@ begin
        FDQueryVisits.RecordCount]);
 end;
 
-
-
 procedure TformMain.LoadSubscription;
 begin
   if not DB.IsConnected then
@@ -436,35 +434,64 @@ begin
     FDQuerySubscriptions.Close;
     FDQuerySubscriptions.Connection := DB.GetConnection;
 
+    // ПОКАЗЫВАЕМ ВСЕ АБОНЕМЕНТЫ С ПРАВИЛЬНЫМ СТАТУСОМ
     FDQuerySubscriptions.SQL.Text :=
       'SELECT ' +
-      'id, ' +
-      'client_id, ' +
-      'CAST(subscription_type AS VARCHAR(100)) AS subscription_type, ' +
-      'start_date, ' +
-      'end_date, ' +
-      'price, ' +
-      'visit_count, ' +
-      'remaining_visit, ' +
-      'is_active, ' +
-      'CAST(notes AS VARCHAR(100)) AS notes ' +
-      'FROM subscriptions ' +
-      'ORDER BY start_date DESC';
+      's.id, ' +
+      's.client_id, ' +
+      'CAST(c.full_name AS VARCHAR(100)) AS client_name, ' +
+      'CAST(s.subscription_type AS VARCHAR(100)) AS subscription_type, ' +
+      's.start_date, ' +
+      's.end_date, ' +
+      's.price, ' +
+      's.visit_count, ' +
+      's.remaining_visit, ' +
+      'CASE WHEN s.is_active = 1 AND date(s.end_date) >= date(''now'') THEN "Активен" ' +
+      '     WHEN s.is_active = 1 AND date(s.end_date) < date(''now'') THEN "Просрочен" ' +
+      '     ELSE "Неактивен" END as status, ' +
+      'CASE WHEN s.is_active = 1 AND date(s.end_date) >= date(''now'') THEN 1 ' +  // Для сортировки
+      '     WHEN s.is_active = 1 AND date(s.end_date) < date(''now'') THEN 2 ' +
+      '     ELSE 3 END as status_order, ' +
+      'CAST(s.notes AS VARCHAR(100)) AS notes ' +
+      'FROM subscriptions s ' +
+      'LEFT JOIN clients c ON c.id = s.client_id ' +
+      'ORDER BY status_order, s.end_date DESC';
 
     FDQuerySubscriptions.Open;
 
-     FDQuerySubscriptions.FieldByName('subscription_type').DisplayWidth := 10;
-     FDQuerySubscriptions.FieldByName('notes').DisplayWidth := 25;
+    // Настройка ширины колонок
+    FDQuerySubscriptions.FieldByName('client_name').DisplayWidth := 25;
+    FDQuerySubscriptions.FieldByName('subscription_type').DisplayWidth := 15;
+    FDQuerySubscriptions.FieldByName('status').DisplayWidth := 12;
+    FDQuerySubscriptions.FieldByName('notes').DisplayWidth := 25;
 
+    // Подсчет статистики
+    var ActiveCount := 0;
+    var ExpiredCount := 0;
+    var InactiveCount := 0;
+
+    FDQuerySubscriptions.First;
+    while not FDQuerySubscriptions.Eof do
+    begin
+      if FDQuerySubscriptions.FieldByName('status').AsString = 'Активен' then
+        Inc(ActiveCount)
+      else if FDQuerySubscriptions.FieldByName('status').AsString = 'Просрочен' then
+        Inc(ExpiredCount)
+      else
+        Inc(InactiveCount);
+      FDQuerySubscriptions.Next;
+    end;
 
     StatusBar1.Panels[1].Text :=
-      'Абонементов: ' + IntToStr(FDQuerySubscriptions.RecordCount);
+      Format('Абонементов: %d (Активных: %d, Просроченных: %d, Неактивных: %d)',
+        [FDQuerySubscriptions.RecordCount, ActiveCount, ExpiredCount, InactiveCount]);
 
   except
     on E: Exception do
       ShowMessage('Ошибка загрузки абонементов: ' + E.Message);
   end;
 end;
+
 
 procedure TformMain.LoadVisits;
 begin
@@ -678,7 +705,7 @@ begin
 
   case PageControl1.ActivePageIndex of
     0: LoadClients;
-    1: LoadSubscription;
+    1: LoadSubscription;  // Обновляем список абонементов
     3: LoadVisits;
   end;
 end;
