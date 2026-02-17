@@ -6,7 +6,7 @@ uses
   System.SysUtils, FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Error,
   FireDAC.UI.Intf, FireDAC.Phys.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool,
   FireDAC.Stan.Async, FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.Phys.SQLiteDef,
-  FireDAC.Stan.ExprFuncs, FireDAC.VCLUI.Wait, FireDAC.Comp.Client, VCL.Dialogs, System.Variants;
+  FireDAC.Stan.ExprFuncs, FireDAC.Comp.DataSet, FireDAC.VCLUI.Wait, FireDAC.Comp.Client, VCL.Dialogs, System.Variants;
 
 type
   TDBModule = class(TObject)
@@ -27,10 +27,10 @@ type
     function GetConnection: TFDConnection;
      function HasActiveVisit(ClientID: Integer): Boolean;
     function ClientExists(ClientID: Integer): Boolean;
-    function GetClientByID(ClientID: Integer): TFDQuery;
-    function GetClients: TFDQuery;
-    function GetSubscriptions: TFDQuery;
-    function GetVisits: TFDQuery;
+    function GetClientByID(ClientID: Integer): TFDMemTable;
+    function GetClients: TFDMemTable;
+    function GetSubscriptions: TFDMemTable;
+    function GetVisits: TFDMemTable;
     function UpdateVisitExit(VisitID: Integer; ExitTime: TTime): Boolean;
 
     function AddClient(fullName: string; email: string;
@@ -223,10 +223,12 @@ begin
 end;
 
 
-function TDBModule.GetClients: TFDQuery;
+function TDBModule.GetClients: TFDMemTable;
 var
   Query : TFDQuery;
 begin
+
+  Result := TFDMemTable.Create(nil);
 
   if not FIsConnected then raise Exception.Create('Нет подключения к базе данных');
 
@@ -236,21 +238,21 @@ begin
       Query.SQL.Text := 'SELECT * FROM clients ORDER BY full_name';
        Query.Open;
 
-      Result := Query;
-  except
+      Result.data := Query.data;
+       finally
     Query.Free;
-    raise;
-
   end;
 
 
 end;
 
 
-function TDBModule.GetSubscriptions: TFDQuery;
+function TDBModule.GetSubscriptions: TFDMemTable;
 var
   Query :TFDQuery;
 begin
+
+Result := TFDMemTable.Create(nil);
         if not FIsConnected then raise Exception.Create('Нет подключения к базе данных');
         Query := TFDQuery.Create(nil);
         try
@@ -258,20 +260,22 @@ begin
               Query.SQL.Text := 'SELECT * FROM subscriptions ORDER BY start_date DESC';
               Query.Open;
 
-              Result := Query;
+               if not Query.IsEmpty then
+      Result.Data := Query.Data;
 
-        except
-          Query.Free;
-          raise;
-        end;
+      finally
+    Query.Free;
+  end;
 
 end;
 
 
-function TDBModule.GetVisits: TFDQuery;
+function TDBModule.GetVisits: TFDMemTable;
 var
   Query :TFDQuery;
 begin
+
+Result := TFDMemTable.Create(nil);
         if not FIsConnected then raise Exception.Create('Нет подключения к базе данных');
         Query := TFDQuery.Create(nil);
         try
@@ -281,26 +285,23 @@ begin
                       'ORDER BY v.visit_date DESC, v.entry_time DESC';
               Query.Open;
 
-              Result := Query;
+               if not Query.IsEmpty then
+      Result.Data := Query.Data;
 
 
-        except
-          Query.Free;
-          raise;
-        end;
+         finally
+    Query.Free;
+  end;
 
 end;
 
 function TDBModule.AddClient(fullName: string;
- email: string; membershipType: string;
+  email: string; membershipType: string;
   registrationDate: TDate; Phone: string; isActive: Boolean;
-   BirthDate: TDate): Integer;
-
-   var
-    Query :TFDQuery;
-
+  BirthDate: TDate): Integer;
+var
+  Query: TFDQuery;
 begin
-
   Result := -1;  // По умолчанию ошибка
 
   if not FIsConnected then
@@ -314,64 +315,66 @@ begin
     if not FConnection.InTransaction then
       FConnection.StartTransaction;
 
-    Query.SQL.Text :=
-      'INSERT INTO clients (' +
-      '  full_name, ' +
-      '  email, ' +
-      '  membership_type, ' +
-      '  registration_date, ' +
-      '  phone, ' +
-      '  is_active, ' +
-      '  birth_date' +
-      ') VALUES (' +
-      '  :full_name, ' +
-      '  :email, ' +
-      '  :membership_type, ' +
-      '  :registration_date, ' +
-      '  :phone, ' +
-      '  :is_active, ' +
-      '  :birth_date' +
-      ')';
+    try
+      Query.SQL.Text :=
+        'INSERT INTO clients (' +
+        '  full_name, ' +
+        '  email, ' +
+        '  membership_type, ' +
+        '  registration_date, ' +
+        '  phone, ' +
+        '  is_active, ' +
+        '  birth_date' +
+        ') VALUES (' +
+        '  :full_name, ' +
+        '  :email, ' +
+        '  :membership_type, ' +
+        '  :registration_date, ' +
+        '  :phone, ' +
+        '  :is_active, ' +
+        '  :birth_date' +
+        ')';
 
-    // Используем AsDateTime для дат
-    Query.ParamByName('full_name').AsString := fullName;
-    Query.ParamByName('email').AsString := email;
-    Query.ParamByName('membership_type').AsString := membershipType;
-    Query.ParamByName('registration_date').AsDateTime := registrationDate;
-    Query.ParamByName('phone').AsString := Phone;
-    Query.ParamByName('is_active').AsBoolean := isActive;
-    Query.ParamByName('birth_date').AsDateTime := BirthDate;
+      // Используем AsDateTime для дат
+      Query.ParamByName('full_name').AsString := fullName;
+      Query.ParamByName('email').AsString := email;
+      Query.ParamByName('membership_type').AsString := membershipType;
+      Query.ParamByName('registration_date').AsDateTime := registrationDate;
+      Query.ParamByName('phone').AsString := Phone;
+      Query.ParamByName('is_active').AsBoolean := isActive;
+      Query.ParamByName('birth_date').AsDateTime := BirthDate;
 
-    Query.ExecSQL;
+      Query.ExecSQL;
 
-    // Получаем ID новой записи
-    Query.SQL.Text := 'SELECT last_insert_rowid() as new_id';
-    Query.Open;
+      // Получаем ID новой записи
+      Query.SQL.Text := 'SELECT last_insert_rowid() as new_id';
+      Query.Open;
 
-    if not Query.Eof then
-      Result := Query.FieldByName('new_id').AsInteger;
+      if not Query.Eof then
+        Result := Query.FieldByName('new_id').AsInteger;
 
-    Query.Close;
+      Query.Close;
 
-    // ВАЖНО: Коммитим транзакцию
-    if FConnection.InTransaction then
-      FConnection.Commit;
-
-  except
-    on E: Exception do
-    begin
-      // Откатываем при ошибке
+      // ВАЖНО: Коммитим транзакцию
       if FConnection.InTransaction then
-        FConnection.Rollback;
-      raise;
-       Query.Free;
+        FConnection.Commit;
+
+    except
+      on E: Exception do
+      begin
+        // Откатываем при ошибке
+        if FConnection.InTransaction then
+          FConnection.Rollback;
+        raise;
+      end;
     end;
 
+  finally
+    Query.Free;  // ← Освобождаем Query в любом случае
   end;
-
-
-
 end;
+
+
 
 function TDBModule.AddSubscription(ClientID: Integer;
                                    SubscriptionType: string;
@@ -502,8 +505,10 @@ begin
       // Обработка exit_time: если 0, то NULL (клиент еще не вышел)
       if ExitTime > 0 then
   Query.ParamByName('exit_time').AsString := FormatDateTime('hh:nn:ss', ExitTime)
-else
-  Query.ParamByName('exit_time').AsString := ''; // Пустая строка
+else  Query.ParamByName('exit_time').AsString := '';
+
+
+
 
 
       Query.ParamByName('duration_minutes').AsInteger := DurationMinutes;
@@ -600,10 +605,12 @@ begin
   end;
 end;
 
-function TDBModule.GetClientByID(ClientID: Integer): TFDQuery;
+function TDBModule.GetClientByID(ClientID: Integer): TFDMemTable;
 var
   Query: TFDQuery;
 begin
+
+Result := TFDMemTable.Create(nil);
   if not FIsConnected then
     raise Exception.Create('Нет подключения к базе данных');
 
@@ -614,81 +621,77 @@ begin
     Query.ParamByName('id').AsInteger := ClientID;
     Query.Open;
 
-    Result := Query;
-  except
+     if not Query.IsEmpty then
+      Result.Data := Query.Data;
+
+        finally
     Query.Free;
-    raise;
   end;
 end;
 
 
-function TDBModule.UpdateClient(ClientID: Integer; FullName, Phone, Email, 
+function TDBModule.UpdateClient(ClientID: Integer; FullName, Phone, Email,
   MembershipType: string; BirthDate: TDate): Boolean;
 var
   Query: TFDQuery;
 begin
   Result := False;
-  
-  
+
   if not FIsConnected then
     raise Exception.Create('Нет подключения к базе данных');
-  
-  
+
   if ClientID <= 0 then
     raise Exception.Create('Неверный ID клиента');
-    
+
   Query := TFDQuery.Create(nil);
-  try
+  try  // Внешний try..finally для освобождения Query
     Query.Connection := FConnection;
-    
-  
+
+    // Начинаем транзакцию
     if not FConnection.InTransaction then
       FConnection.StartTransaction;
-    
-    
-    Query.SQL.Text := 
-      'UPDATE clients SET ' +
-      'full_name = :full_name, ' +
-      'phone = :phone, ' +
-      'email = :email, ' +
-      'birth_date = :birth_date, ' +
-      'membership_type = :membership_type ' +
-      'WHERE id = :id';
-    
-    
-    Query.ParamByName('full_name').AsString := FullName;
-    Query.ParamByName('phone').AsString := Phone;
-    Query.ParamByName('email').AsString := Email;
-    Query.ParamByName('birth_date').AsDateTime := BirthDate;
-    Query.ParamByName('membership_type').AsString := MembershipType;
-    Query.ParamByName('id').AsInteger := ClientID;
-    
-    
-    Query.ExecSQL;
-    
-  
-    Result := Query.RowsAffected > 0;
-    
-    
-    if FConnection.InTransaction then
-      FConnection.Commit;
-      
-  except
-    on E: Exception do
-    begin
-      
+
+    try  // Внутренний try..except для обработки ошибок БД
+      Query.SQL.Text :=
+        'UPDATE clients SET ' +
+        'full_name = :full_name, ' +
+        'phone = :phone, ' +
+        'email = :email, ' +
+        'birth_date = :birth_date, ' +
+        'membership_type = :membership_type ' +
+        'WHERE id = :id';
+
+      Query.ParamByName('full_name').AsString := FullName;
+      Query.ParamByName('phone').AsString := Phone;
+      Query.ParamByName('email').AsString := Email;
+      Query.ParamByName('birth_date').AsDateTime := BirthDate;
+      Query.ParamByName('membership_type').AsString := MembershipType;
+      Query.ParamByName('id').AsInteger := ClientID;
+
+      Query.ExecSQL;
+
+      Result := Query.RowsAffected > 0;
+
+      // Фиксируем транзакцию
       if FConnection.InTransaction then
-        FConnection.Rollback;
-      
-      
-      raise Exception.Create('Ошибка обновления клиента: ' + E.Message);
-    end;
-  end;  
-  
- 
-  Query.Free;
-  
-end;  
+        FConnection.Commit;
+
+    except
+      on E: Exception do
+      begin
+        // Откатываем при ошибке
+        if FConnection.InTransaction then
+          FConnection.Rollback;
+
+        // Пробрасываем ошибку дальше
+        raise Exception.Create('Ошибка обновления клиента: ' + E.Message);
+      end;
+    end;  // Конец внутреннего try..except
+
+  finally
+    Query.Free;  // Освобождаем Query в любом случае
+  end;
+end;
 
 initialization
 
