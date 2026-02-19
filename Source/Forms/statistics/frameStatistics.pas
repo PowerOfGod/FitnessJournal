@@ -52,12 +52,14 @@ type
 
     // Таймер
     Timer1: TTimer;
+    gridHourly: TDBGrid;
 
     // Процедуры-обработчики
     procedure cmbPeriodChange(Sender: TObject);
     procedure dtpDateFromChange(Sender: TObject);
     procedure dtpDateToChange(Sender: TObject);
     procedure btnRefreshClick(Sender: TObject);
+    procedure Timer1Timer(Sender: TObject);
 
   private
     FDateFrom: TDate;
@@ -96,6 +98,15 @@ begin
   // Устанавливаем начальные даты
   dtpDateFrom.Date := StartOfTheMonth(Date);
   dtpDateTo.Date := Date;
+
+  dsDaily.DataSet := qryDaily;        // DataSource берет данные из запроса
+  gridDaily.DataSource := dsDaily;     // Grid берет данные из DataSource
+
+  dsTrainer.DataSet := qryTrainer;
+  gridTrainer.DataSource := dsTrainer;
+
+  dsHourly.DataSet := qryHourly;
+  gridHourly.DataSource := dsHourly;
 
   // Настраиваем статусную строку
   StatusBar1.Panels.Clear;
@@ -139,6 +150,11 @@ begin
   finally
     Screen.Cursor := crDefault;
   end;
+end;
+
+procedure TFrame1.Timer1Timer(Sender: TObject);
+begin
+  RefreshData;
 end;
 
 procedure TFrame1.UpdateDateRange;
@@ -221,6 +237,9 @@ end;
 procedure TFrame1.LoadDailyStats;
 begin
   qryDaily.Close;
+
+   ShowMessage('Загружаем статистику за период: ' +
+              DateToStr(FDateFrom) + ' - ' + DateToStr(FDateTo));
   qryDaily.SQL.Text :=
     'SELECT ' +
     '  visit_date, ' +
@@ -235,7 +254,7 @@ begin
   qryDaily.ParamByName('date_from').AsDate := FDateFrom;
   qryDaily.ParamByName('date_to').AsDate := FDateTo;
   qryDaily.Open;
-
+   ShowMessage('Найдено записей: ' + IntToStr(qryDaily.RecordCount));
   // Настройка заголовков
   if qryDaily.Active then
   begin
@@ -251,7 +270,7 @@ begin
   qryTrainer.Close;
   qryTrainer.SQL.Text :=
     'SELECT ' +
-    '  trainer_name, ' +
+    '  CAST(trainer_name AS VARCHAR(100)) AS trainer_name, ' +
     '  COUNT(*) as visit_count, ' +
     '  SUM(duration_minutes) as total_minutes ' +
     'FROM visits ' +
@@ -282,12 +301,21 @@ begin
     '  COUNT(*) as visit_count ' +
     'FROM visits ' +
     'WHERE visit_date BETWEEN :date_from AND :date_to ' +
+    '  AND entry_time IS NOT NULL ' +
     'GROUP BY hour ' +
     'ORDER BY hour';
 
   qryHourly.ParamByName('date_from').AsDate := FDateFrom;
   qryHourly.ParamByName('date_to').AsDate := FDateTo;
   qryHourly.Open;
+
+  if qryHourly.Active and not qryHourly.IsEmpty then
+  begin
+    qryHourly.FieldByName('hour').DisplayLabel := 'Час';
+    qryHourly.FieldByName('hour').DisplayWidth := 10;
+    qryHourly.FieldByName('visit_count').DisplayLabel := 'Посещений';
+    qryHourly.FieldByName('visit_count').DisplayWidth := 15;
+  end;
 end;
 
 procedure TFrame1.UpdateMemoStats;

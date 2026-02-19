@@ -75,9 +75,10 @@ object Frame1: TFrame1
     Top = 70
     Width = 900
     Height = 511
-    ActivePage = tabGeneral
+    ActivePage = tabTrainer
     Align = alClient
     TabOrder = 1
+    ExplicitTop = 64
     object tabGeneral: TTabSheet
       Caption = #1054#1073#1097#1072#1103' '#1089#1090#1072#1090#1080#1089#1090#1080#1082#1072
       object MemoStats: TMemo
@@ -145,11 +146,27 @@ object Frame1: TFrame1
         Align = alClient
         BevelOuter = bvNone
         TabOrder = 1
+        ExplicitLeft = 464
+        ExplicitWidth = 428
       end
     end
     object tabHourly: TTabSheet
       Caption = #1055#1086' '#1095#1072#1089#1072#1084
       ImageIndex = 2
+      object gridHourly: TDBGrid
+        Left = 0
+        Top = 0
+        Width = 892
+        Height = 481
+        Align = alClient
+        DataSource = dsHourly
+        TabOrder = 0
+        TitleFont.Charset = DEFAULT_CHARSET
+        TitleFont.Color = clWindowText
+        TitleFont.Height = -12
+        TitleFont.Name = 'Segoe UI'
+        TitleFont.Style = []
+      end
     end
   end
   object StatusBar1: TStatusBar
@@ -194,6 +211,7 @@ object Frame1: TFrame1
   object Timer1: TTimer
     Enabled = False
     Interval = 300000
+    OnTimer = Timer1Timer
     Left = 320
     Top = 160
   end
