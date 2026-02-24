@@ -85,7 +85,7 @@ object formMain: TformMain
     Top = 29
     Width = 956
     Height = 511
-    ActivePage = tsClients
+    ActivePage = tsStatistics
     Align = alClient
     TabOrder = 1
     ExplicitWidth = 954
@@ -126,9 +126,9 @@ object formMain: TformMain
       end
     end
     object tsStatistics: TTabSheet
-  Caption = 'Статистика'
-  ImageIndex = 2
-end
+      Caption = #1056#1038#1057#8218#1056#176#1057#8218#1056#1105#1057#1027#1057#8218#1056#1105#1056#1108#1056#176
+      ImageIndex = 2
+    end
     object tsVisits: TTabSheet
       Caption = #1055#1086#1089#1077#1097#1077#1085#1080#1077
       ImageIndex = 3
@@ -185,7 +185,7 @@ end
     end
   end
   object btnTestDB: TButton
-    Left = 344
+    Left = 392
     Top = 24
     Width = 75
     Height = 25
@@ -223,6 +223,29 @@ end
     end
     object N3: TMenuItem
       Caption = #1054#1087#1077#1088#1072#1094#1080#1080
+    end
+    object mnReports: TMenuItem
+      Caption = #1054#1090#1095#1077#1090#1099
+      object mnClientsReport: TMenuItem
+        Caption = #1057#1087#1080#1089#1086#1082' '#1082#1083#1080#1077#1085#1090#1086#1074
+        OnClick = mnClientsReportClick
+      end
+      object mnSubscriptionsReport: TMenuItem
+        Caption = #1040#1073#1086#1085#1077#1084#1077#1085#1090#1099
+        OnClick = mnSubscriptionsReportClick
+      end
+      object mnVisitsReport: TMenuItem
+        Caption = #1055#1086#1089#1077#1097#1077#1085#1080#1103
+        OnClick = mnVisitsReportClick
+      end
+      object mnTrainerReport: TMenuItem
+        Caption = #1057#1090#1072#1090#1080#1089#1090#1080#1082#1072' '#1087#1086' '#1090#1088#1077#1085#1077#1088#1072#1084
+        OnClick = mnTrainerReportClick
+      end
+      object mnExportExcel: TMenuItem
+        Caption = #1069#1082#1089#1087#1086#1088#1090' '#1074' Excel'
+        OnClick = mnExportExcelClick
+      end
     end
     object N4: TMenuItem
       Caption = #1055#1086#1084#1086#1097#1100

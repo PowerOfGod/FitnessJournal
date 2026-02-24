@@ -13,7 +13,7 @@ uses
   FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
   FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat,
   FireDAC.Phys.SQLiteDef, FireDAC.UI.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool,
-  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait, System.UITypes, frameStatistics;
+  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait, System.UITypes, frameStatistics, ReportsModule;
 
 type
   TformMain = class(TForm)
@@ -49,6 +49,7 @@ type
     DataSourceSubscriptions: TDataSource;
     DataSourceVisits: TDataSource;
     StatusBar1: TStatusBar;
+    mnReports: TMenuItem;
     procedure RegisterVisitExit(VisitID: Integer);
     procedure btnNewClientClick(Sender: TObject);
     procedure btnNewVisitClick(Sender: TObject);
@@ -65,6 +66,11 @@ type
     procedure HardDeleteClient(ClientID: Integer; ClientName: String);
     /// /    procedure LoadSubscriptions;
     /// /    procedure LoadVisits;
+    procedure mnTrainerReportClick(Sender: TObject);
+    procedure mnVisitsReportClick(Sender: TObject);
+    procedure mnSubscriptionsReportClick(Sender: TObject);
+    procedure mnClientsReportClick(Sender: TObject);
+    procedure mnExportExcelClick(Sender: TObject);
     procedure PageControl1Change(Sender: TObject);
     procedure LoadStatistics;
     procedure DBGridVisitsDblClick(Sender: TObject);
@@ -840,6 +846,62 @@ begin
       ShowMessage('Ошибка при регистрации выхода: ' + E.Message);
     end;
   end;
+end;
+
+
+
+procedure TformMain.mnClientsReportClick(Sender: TObject);
+begin
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Нет подключения к базе данных!');
+    Exit;
+  end;
+  ShowClientsReport;
+end;
+
+// Отчет по абонементам
+procedure TformMain.mnSubscriptionsReportClick(Sender: TObject);
+begin
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Нет подключения к базе данных!');
+    Exit;
+  end;
+  ShowSubscriptionsReport;
+end;
+
+// Отчет по посещениям
+procedure TformMain.mnVisitsReportClick(Sender: TObject);
+begin
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Нет подключения к базе данных!');
+    Exit;
+  end;
+  ShowVisitsReport;
+end;
+
+// Отчет по тренерам
+procedure TformMain.mnTrainerReportClick(Sender: TObject);
+begin
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Нет подключения к базе данных!');
+    Exit;
+  end;
+  ShowTrainerReport;
+end;
+
+// Экспорт в Excel
+procedure TformMain.mnExportExcelClick(Sender: TObject);
+begin
+  if not DB.IsConnected then
+  begin
+    ShowMessage('Нет подключения к базе данных!');
+    Exit;
+  end;
+  ExportToExcel;
 end;
 // procedure TformMain.LoadSubscriptions;
 // begin
