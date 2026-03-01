@@ -85,18 +85,74 @@ object formMain: TformMain
     Top = 29
     Width = 956
     Height = 511
-    ActivePage = tsStatistics
+    ActivePage = tsClients
     Align = alClient
     TabOrder = 1
     ExplicitWidth = 954
     ExplicitHeight = 506
     object tsClients: TTabSheet
       Caption = #1050#1083#1080#1077#1085#1090#1099
-      object DBGridClients: TDBGrid
+      object PanelClientSearch: TPanel
         Left = 0
         Top = 0
         Width = 948
-        Height = 481
+        Height = 41
+        Align = alTop
+        TabOrder = 1
+        object lblSearch: TLabel
+          Left = 16
+          Top = 13
+          Width = 38
+          Height = 15
+          Caption = #1055#1086#1080#1089#1082':'
+        end
+        object edtSearch: TEdit
+          Left = 72
+          Top = 10
+          Width = 200
+          Height = 23
+          TabOrder = 0
+        end
+        object btnClearSearch: TButton
+          Left = 280
+          Top = 9
+          Width = 75
+          Height = 25
+          Caption = #1054#1095#1080#1089#1090#1080#1090#1100
+          TabOrder = 1
+        end
+        object rbName: TRadioButton
+          Left = 376
+          Top = 12
+          Width = 65
+          Height = 17
+          Caption = #1055#1086' '#1060#1048#1054
+          Checked = True
+          TabOrder = 2
+          TabStop = True
+        end
+        object rbPhone: TRadioButton
+          Left = 456
+          Top = 12
+          Width = 90
+          Height = 17
+          Caption = #1055#1086' '#1090#1077#1083#1077#1092#1086#1085#1091
+          TabOrder = 3
+        end
+        object rbEmail: TRadioButton
+          Left = 552
+          Top = 12
+          Width = 90
+          Height = 17
+          Caption = #1055#1086' Email'
+          TabOrder = 4
+        end
+      end
+      object DBGridClients: TDBGrid
+        Left = 0
+        Top = 41
+        Width = 948
+        Height = 440
         Align = alClient
         DataSource = DataSourceClients
         TabOrder = 0

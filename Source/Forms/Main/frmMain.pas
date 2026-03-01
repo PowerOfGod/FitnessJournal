@@ -50,6 +50,13 @@ type
     DataSourceVisits: TDataSource;
     StatusBar1: TStatusBar;
     mnReports: TMenuItem;
+    PanelClientSearch: TPanel;
+    lblSearch: TLabel;
+    edtSearch: TEdit;
+    btnClearSearch: TButton;
+    rbName: TRadioButton;
+    rbPhone: TRadioButton;
+    rbEmail: TRadioButton;
     procedure RegisterVisitExit(VisitID: Integer);
     procedure btnNewClientClick(Sender: TObject);
     procedure btnNewVisitClick(Sender: TObject);
@@ -75,10 +82,16 @@ type
     procedure LoadStatistics;
     procedure DBGridVisitsDblClick(Sender: TObject);
     procedure DBGridClientsDblClick(Sender: TObject);
+    procedure edtSearchChange(Sender: TObject);
+    procedure btnClearSearchClick(Sender: TObject);
+    procedure rbSearchClick(Sender: TObject);
   private
     { Private declarations }
     FDBPath: string;
     FStatsFrame: TFrame1;
+    FSearchText: string;
+    FSearchField: Integer;
+    procedure ApplySearchFilter;
   public
 
     { Public declarations }
@@ -395,6 +408,9 @@ begin
   // Статус по умолчанию
   StatusBar1.Panels[0].Text := 'Готов';
   StatusBar1.Panels[1].Text := 'БД: не подключена';
+
+  FSearchText := '';
+  FSearchField := 0;
 end;
 
 procedure TformMain.LoadStatistics;
@@ -542,6 +558,8 @@ begin
 
     // 4. Открываем запрос
     FDQueryClients.Open;
+
+    ApplySearchFilter;
 
     // 5. Настройка ширины колонок
     FDQueryClients.FieldByName('full_name').DisplayWidth := 25;
@@ -902,6 +920,72 @@ begin
     Exit;
   end;
   ExportToExcel;
+end;
+
+
+procedure TformMain.edtSearchChange(Sender: TObject);
+begin
+  FSearchText := Trim(edtSearch.Text);
+  ApplySearchFilter;
+end;
+
+procedure TformMain.btnClearSearchClick(Sender: TObject);
+begin
+  edtSearch.Text := '';
+  FSearchText := '';
+  ApplySearchFilter;
+  edtSearch.SetFocus;
+end;
+
+procedure TformMain.rbSearchClick(Sender: TObject);
+begin
+  if Sender = rbName then
+    FSearchField := 0
+  else if Sender = rbPhone then
+    FSearchField := 1
+  else if Sender = rbEmail then
+    FSearchField := 2;
+
+  ApplySearchFilter;
+end;
+
+procedure TformMain.ApplySearchFilter;
+var
+  TotalCount: Integer;
+  FilterExpr: string;
+begin
+  if not DB.IsConnected or not FDQueryClients.Active then
+    Exit;
+
+  TotalCount := FDQueryClients.RecordCount;
+  FDQueryClients.Filtered := False;
+
+  if FSearchText <> '' then
+  begin
+    FSearchText := StringReplace(FSearchText, '''', '''''', [rfReplaceAll]);
+
+    case FSearchField of
+      0: FilterExpr := 'full_name LIKE ''%' + FSearchText + '%''';
+      1: FilterExpr := 'phone LIKE ''%' + FSearchText + '%''';
+      2: FilterExpr := 'email LIKE ''%' + FSearchText + '%''';
+    else
+      FilterExpr := 'full_name LIKE ''%' + FSearchText + '%''';
+    end;
+
+    FDQueryClients.Filter := FilterExpr;
+    FDQueryClients.Filtered := True;
+
+    if FDQueryClients.RecordCount > 0 then
+      StatusBar1.Panels[1].Text := Format('Найдено: %d из %d',
+        [FDQueryClients.RecordCount, TotalCount])
+    else
+      StatusBar1.Panels[1].Text := 'Ничего не найдено';
+  end
+  else
+  begin
+    FDQueryClients.Filtered := False;
+    StatusBar1.Panels[1].Text := 'Клиентов: ' + IntToStr(FDQueryClients.RecordCount);
+  end;
 end;
 // procedure TformMain.LoadSubscriptions;
 // begin
