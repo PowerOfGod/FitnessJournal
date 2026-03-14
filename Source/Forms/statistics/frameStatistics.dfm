@@ -78,7 +78,6 @@ object Frame1: TFrame1
     ActivePage = tabTrainer
     Align = alClient
     TabOrder = 1
-    ExplicitTop = 64
     object tabGeneral: TTabSheet
       Caption = #1054#1073#1097#1072#1103' '#1089#1090#1072#1090#1080#1089#1090#1080#1082#1072
       object MemoStats: TMemo
@@ -146,8 +145,6 @@ object Frame1: TFrame1
         Align = alClient
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitLeft = 464
-        ExplicitWidth = 428
       end
     end
     object tabHourly: TTabSheet

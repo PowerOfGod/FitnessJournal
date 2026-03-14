@@ -108,6 +108,10 @@ begin
   dsHourly.DataSet := qryHourly;
   gridHourly.DataSource := dsHourly;
 
+
+  dsDaily.DataSet := qryDaily;        // Для ежедневной статистики
+  dsTrainer.DataSet := qryTrainer;    // Для статистики по тренерам
+  dsHourly.DataSet := qryHourly;
   // Настраиваем статусную строку
   StatusBar1.Panels.Clear;
   StatusBar1.Panels.Add;
@@ -141,15 +145,25 @@ begin
   end;
 
   Screen.Cursor := crHourGlass;
+  StatusBar1.Panels[0].Text := 'Загрузка данных...';
   try
     UpdateDateRange;
     LoadDailyStats;
     LoadTrainerStats;
     LoadHourlyStats;
     UpdateMemoStats;
-  finally
-    Screen.Cursor := crDefault;
+
+     StatusBar1.Panels[0].Text := Format('Период: %s - %s',
+      [DateToStr(FDateFrom), DateToStr(FDateTo)]);
+  except
+
+    on E: Exception do
+    begin
+      StatusBar1.Panels[0].Text := 'Ошибка загрузки';
+      ShowMessage('Ошибка при загрузке статистики: ' + E.Message);
+    end;
   end;
+   Screen.Cursor := crDefault;
 end;
 
 procedure TFrame1.Timer1Timer(Sender: TObject);
