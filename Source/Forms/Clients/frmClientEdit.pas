@@ -36,6 +36,7 @@ type
   private
   FIsEditMode: Boolean;
     FClientID: Integer;
+  function IsValidEmail(const Email: string): Boolean;
   function GetFullName: string;
 function GetPhone: string;
 function GetEmail: string;
@@ -95,6 +96,52 @@ begin
   Result := DateTimePicker1.Date;
 end;
 
+
+function TfrmClientEdit1.IsValidEmail(const Email: string): Boolean;
+var
+  AtPos, DotPos: Integer;
+begin
+   Result := False;
+
+   if Trim(Email) = '' then
+   Exit;
+
+   AtPos := Pos('@', Email);
+   if AtPos = 0 then
+   begin
+     ShowMessage('Ошибка: в email должен быть символ @');
+    Exit;
+   end;
+
+  if AtPos = 1 then
+  begin
+    ShowMessage('Ошибка: email не может начинаться с @');
+    Exit;
+  end;
+
+  DotPos := Pos('.', Email, AtPos + 1);
+  if DotPos = 0 then
+  begin
+    ShowMessage('Ошибка: после @ должен быть домен (пример: mail.ru)');
+    Exit;
+  end;
+
+  if DotPos = AtPos + 1 then
+  begin
+    ShowMessage('Ошибка: после @ должен быть домен (пример: @mail.ru)');
+    Exit;
+  end;
+
+  if DotPos = Length(Email) then
+  begin
+    ShowMessage('Ошибка: после точки должно быть расширение (.ru, .com)');
+    Exit;
+  end;
+
+   Result := True;
+
+end;
+
 procedure TfrmClientEdit1.btnSaveClientClick(Sender: TObject);
 var
   FullName, Phone, Email, MembershipType: string;
@@ -123,6 +170,18 @@ begin
     ShowMessage('Введите телефон клиента!');
     Edit2.SetFocus;
     Exit;
+  end;
+
+  Email := Trim(Edit3.text);
+  if Email <> '' then
+  begin
+      if not IsValidEmail(Email) then
+      begin
+        ShowMessage('Введен некоректный Email!');
+         Edit3.SetFocus;
+      Exit;
+      end;
+
   end;
 
   // СБОР ДАННЫХ
