@@ -11,7 +11,7 @@ uses
   FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
   FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat,
   FireDAC.Phys.SQLiteDef, FireDAC.UI.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool,
-  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait, System.UITypes;
+  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait, System.UITypes, System.DateUtils;
 
 type
   TfrmClientEdit1 = class(TForm)
@@ -37,6 +37,7 @@ type
   FIsEditMode: Boolean;
     FClientID: Integer;
   function IsValidEmail(const Email: string): Boolean;
+  function IsValidBirthDate(const BirthDate: TDate): Boolean;
   function GetFullName: string;
 function GetPhone: string;
 function GetEmail: string;
@@ -142,6 +143,31 @@ begin
 
 end;
 
+function TfrmClientEdit1.IsValidBirthDate(const BirthDate: TDate): Boolean;
+begin
+     Result := False;
+
+     if BirthDate > Date then
+     begin
+       ShowMessage('Ошибка: дата рождения не может быть в будущем!');
+    Exit;
+     end;
+
+     if YearsBetween(Date, BirthDate) < 14 then
+  begin
+    ShowMessage('Ошибка: клиенту должно быть не менее 14 лет!');
+    Exit;
+  end;
+
+  if YearsBetween(Date, BirthDate) > 120 then
+  begin
+    ShowMessage('Ошибка: проверьте правильность даты рождения!');
+    Exit;
+  end;
+
+   Result := True;
+end;
+
 procedure TfrmClientEdit1.btnSaveClientClick(Sender: TObject);
 var
   FullName, Phone, Email, MembershipType: string;
@@ -182,6 +208,13 @@ begin
       Exit;
       end;
 
+  end;
+
+  BirthDate := DateTimePicker1.Date;
+  if not IsValidBirthDate(BirthDate) then
+  begin
+    DateTimePicker1.SetFocus;
+    Exit;
   end;
 
   // СБОР ДАННЫХ
