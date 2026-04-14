@@ -645,10 +645,12 @@ begin
     begin
       // Клиент уже сохранен формой
       // Просто обновляем список
-      LoadClients;
+
 
       // Можно показать ID сохраненного клиента
       ShowMessage('Клиент добавлен! ID: ' + IntToStr(ClientForm.ClientID));
+       LoadClients;
+       PageControl1.ActivePageIndex := 0;
     end;
   finally
     ClientForm.Free;
@@ -663,7 +665,10 @@ begin
   try
     if SubscriptionForm.ShowModal = mrOk then
       ShowMessage('Абонемент добавлен!');
+      LoadSubscription;
+      LoadClients;
 
+      PageControl1.ActivePageIndex := 1;
   finally
     SubscriptionForm.Free;
   end;
@@ -680,6 +685,18 @@ begin
     if VisitForm.ShowModal = mrOk then
     begin
       ShowMessage('Посещение зарегистрировано!');
+
+      LoadVisits;
+
+      if PageControl1.ActivePageIndex = 2 then
+      begin
+        if Assigned(FStatsFrame) then
+          FStatsFrame.RefreshData;
+
+      end;
+
+      PageControl1.ActivePageIndex := 3;
+
     end;
 
   finally
@@ -726,9 +743,16 @@ begin
 
   case Res of
     mrYes:
-      EditClient(ClientID); // Редактировать
+    begin
+       EditClient(ClientID);
+      LoadClients;
+    end;
+
     mrNo:
-      DeleteClient(ClientID); // Удалить
+    begin
+      DeleteClient(ClientID);
+       LoadClients;
+    end;
     mrCancel:
       ; // Ничего не делать
   end;

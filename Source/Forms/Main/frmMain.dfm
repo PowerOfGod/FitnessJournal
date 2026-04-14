@@ -23,7 +23,6 @@ object formMain: TformMain
     ParentShowHint = False
     ShowHint = True
     TabOrder = 0
-    ExplicitWidth = 954
     object btnNewClient: TToolButton
       Left = 0
       Top = 0
@@ -88,8 +87,6 @@ object formMain: TformMain
     ActivePage = tsClients
     Align = alClient
     TabOrder = 1
-    ExplicitWidth = 954
-    ExplicitHeight = 506
     object tsClients: TTabSheet
       Caption = #1050#1083#1080#1077#1085#1090#1099
       object PanelClientSearch: TPanel
@@ -265,8 +262,6 @@ object formMain: TformMain
       item
         Width = 50
       end>
-    ExplicitTop = 535
-    ExplicitWidth = 954
   end
   object MainMenu1: TMainMenu
     Left = 304
