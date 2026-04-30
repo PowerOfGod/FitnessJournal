@@ -109,7 +109,7 @@ var
   ClientForm: TfrmClientEdit1;
   Query: TFDQuery;
 begin
-  ShowMessage('Редактирование клиента с ID: ' + IntToStr(ClientID));
+//  ShowMessage('Редактирование клиента с ID: ' + IntToStr(ClientID));
   if not DB.IsConnected then
   begin
     ShowMessage('Нет подключенияя к базе данных!');
@@ -383,7 +383,7 @@ begin
     if DB.ConnectToDB(FDBPath) then
     begin
       StatusBar1.Panels[0].Text := 'Подключено: ' + ExtractFileName(FDBPath);
-      ShowMessage('✅ База данных подключена');
+//      ShowMessage('✅ База данных подключена');
 
       LoadClients;
 

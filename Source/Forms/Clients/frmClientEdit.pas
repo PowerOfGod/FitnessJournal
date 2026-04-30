@@ -374,8 +374,8 @@ end;
 
 procedure TfrmClientEdit1.FormCreate(Sender: TObject);
 begin
-  ShowMessage('FormCreate: IsEditMode=' + BoolToStr(FIsEditMode, True) +
-              ', ClientID=' + IntToStr(FClientID));
+//  ShowMessage('FormCreate: IsEditMode=' + BoolToStr(FIsEditMode, True) +
+//              ', ClientID=' + IntToStr(FClientID));
 
   // Инициализация переменных
   FIsEditMode := False;

@@ -129,10 +129,7 @@ begin
 
 
 
-    // Для отладки
-    ShowMessage('HasActiveVisit: клиент ID=' + IntToStr(ClientID) +
-                ', активных посещений=' + IntToStr(Count));
-
+    
   finally
     Query.Free;
   end;

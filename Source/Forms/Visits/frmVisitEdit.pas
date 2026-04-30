@@ -73,9 +73,6 @@ begin
     // Сейчас мы его извлекаем и преобразуем обратно в Integer
     FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
 
-    // Отладка (можно убрать в релизе)
-    ShowMessage('Выбран клиент ID=' + IntToStr(FClientID) +
-                ', проверяем активное посещение...');
 
     // ========== ШАГ 3: ЗАГРУЖАЕМ ДАННЫЕ КЛИЕНТА ==========
 
@@ -89,7 +86,7 @@ begin
     begin
       // ========== РЕЖИМ ВЫХОДА (клиент уже внутри) ==========
 
-      ShowMessage('ЕСТЬ активное посещение! Переключаем в режим выхода');
+
 
       FMode := modeExit;  // Устанавливаем режим "Выход"
 
@@ -119,7 +116,7 @@ begin
         if not Query.Eof then
         begin
           FVisitID := Query.FieldByName('id').AsInteger;
-          ShowMessage('Найдено активное посещение ID=' + IntToStr(FVisitID));
+//          ShowMessage('Найдено активное посещение ID=' + IntToStr(FVisitID));
         end;
       finally
         Query.Free;
@@ -129,7 +126,7 @@ begin
     begin
       // ========== РЕЖИМ ВХОДА (новое посещение) ==========
 
-      ShowMessage('НЕТ активного посещения. Режим входа');
+
 
       FMode := modeEntry;    // Устанавливаем режим "Вход"
       FVisitID := 0;         // Обнуляем ID посещения

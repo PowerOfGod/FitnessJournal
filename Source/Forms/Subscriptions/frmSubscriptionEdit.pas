@@ -96,7 +96,7 @@ begin
     Query.ParamByName('new_id').AsInteger := NewSubscriptionID;
     Query.ExecSQL;
 
-    ShowMessage('Деактивировано старых абонементов: ' + IntToStr(Query.RowsAffected));
+
 
   finally
     Query.Free;

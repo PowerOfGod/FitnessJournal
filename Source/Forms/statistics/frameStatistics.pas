@@ -252,8 +252,8 @@ procedure TFrame1.LoadDailyStats;
 begin
   qryDaily.Close;
 
-   ShowMessage('Загружаем статистику за период: ' +
-              DateToStr(FDateFrom) + ' - ' + DateToStr(FDateTo));
+//   ShowMessage('Загружаем статистику за период: ' +
+//              DateToStr(FDateFrom) + ' - ' + DateToStr(FDateTo));
   qryDaily.SQL.Text :=
     'SELECT ' +
     '  visit_date, ' +
@@ -268,7 +268,7 @@ begin
   qryDaily.ParamByName('date_from').AsDate := FDateFrom;
   qryDaily.ParamByName('date_to').AsDate := FDateTo;
   qryDaily.Open;
-   ShowMessage('Найдено записей: ' + IntToStr(qryDaily.RecordCount));
+
   // Настройка заголовков
   if qryDaily.Active then
   begin
