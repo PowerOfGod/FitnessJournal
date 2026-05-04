@@ -13,7 +13,7 @@ uses
   FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
   FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat,
   FireDAC.Phys.SQLiteDef, FireDAC.UI.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool,
-  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait, System.UITypes, frameStatistics, ReportsModule;
+  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait, System.UITypes, frameStatistics, ReportsModule, uUIStyles;
 
 type
   TformMain = class(TForm)
@@ -363,7 +363,6 @@ end;
 
 procedure TformMain.FormCreate(Sender: TObject);
 begin
-
   // 1. Путь к БД рядом с exe
   FDBPath := GetDBPath;
 
@@ -375,7 +374,7 @@ begin
       'Поместите FitnessCenter.db рядом с программой.');
 
     StatusBar1.Panels[1].Text := 'БД: не найдена';
-    Exit; // Выходим, т.к. без БД приложение не может работать
+    Exit;
   end;
 
   // 3. Подключаемся
@@ -383,17 +382,19 @@ begin
     if DB.ConnectToDB(FDBPath) then
     begin
       StatusBar1.Panels[0].Text := 'Подключено: ' + ExtractFileName(FDBPath);
-//      ShowMessage('✅ База данных подключена');
 
       LoadClients;
+      LoadSubscription;
+      LoadVisits;
+      LoadStatistics;
 
-       // ========== СОЗДАЕМ ФРЕЙМ СТАТИСТИКИ ==========
+      // ========== СОЗДАЕМ ФРЕЙМ СТАТИСТИКИ ==========
       if tsStatistics.ControlCount = 0 then
       begin
-        FStatsFrame := TFrame1.Create(tsStatistics);  // Родитель - вкладка
-        FStatsFrame.Parent := tsStatistics;           // Родитель для отображения
-        FStatsFrame.Align := alClient;                 // Растянуть на всю вкладку
-        FStatsFrame.Initialize;                         // Инициализация
+        FStatsFrame := TFrame1.Create(tsStatistics);
+        FStatsFrame.Parent := tsStatistics;
+        FStatsFrame.Align := alClient;
+        FStatsFrame.Initialize;
       end;
     end;
   except
@@ -401,13 +402,30 @@ begin
       ShowMessage(E.Message);
   end;
 
+  // ========== ПРИМЕНЯЕМ СТИЛИ (ВНЕ БЛОКА try..except) ==========
+  try
+    
+     TUIStyles.FormatDates(FDQueryClients, ['birth_date', 'registration_date']);
+    TUIStyles.FormatDates(FDQuerySubscriptions, ['start_date', 'end_date']);
+    TUIStyles.FormatDates(FDQueryVisits, ['visit_date']);
+
+
+    StatusBar1.Panels[2].Text := 'Стили применены';
+  except
+    on E: Exception do
+      StatusBar1.Panels[2].Text := 'Ошибка стилей: ' + E.Message;
+  end;
+
   // Привязываем обработчики
   PageControl1.OnChange := PageControl1Change;
   btnRefresh.OnClick := btnRefreshClick;
 
   // Статус по умолчанию
-  StatusBar1.Panels[0].Text := 'Готов';
-  StatusBar1.Panels[1].Text := 'БД: не подключена';
+  if not DB.IsConnected then
+  begin
+    StatusBar1.Panels[0].Text := 'Готов';
+    StatusBar1.Panels[1].Text := 'БД: не подключена';
+  end;
 
   FSearchText := '';
   FSearchField := 0;
@@ -415,14 +433,12 @@ end;
 
 procedure TformMain.LoadStatistics;
 begin
-  if not DB.IsConnected then
-    Exit;
+  if not DB.IsConnected then Exit;
 
-  // Простая статистика
-  StatusBar1.Panels[2].Text :=
-    Format('Клиентов: %d | Абонементов: %d | Посещений: %d',
-    [FDQueryClients.RecordCount, FDQuerySubscriptions.RecordCount,
-    FDQueryVisits.RecordCount]);
+  StatusBar1.Panels[2].Text := Format('Всего: Клиентов=%d, Абонементов=%d, Посещений=%d',
+    [FDQueryClients.RecordCount,
+     FDQuerySubscriptions.RecordCount,
+     FDQueryVisits.RecordCount]);
 end;
 
 procedure TformMain.LoadSubscription;

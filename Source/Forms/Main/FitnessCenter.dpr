@@ -10,7 +10,8 @@ uses
   frmMain in 'frmMain.pas' {formMain},
   Vcl.Themes,
   Vcl.Styles,
-  frameStatistics in '..\statistics\frameStatistics.pas' {Frame1: TFrame1};
+  frameStatistics in '..\statistics\frameStatistics.pas' {Frame1: TFrame},
+  uUIStyles in '..\..\Core\uUIStyles.pas';
 
 {$R *.res}
 
