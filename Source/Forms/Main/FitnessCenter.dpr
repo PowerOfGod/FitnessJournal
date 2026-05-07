@@ -1,4 +1,4 @@
-program FitnessCenter;
+﻿program FitnessCenter;
 
 uses
   Vcl.Forms,
@@ -11,14 +11,25 @@ uses
   Vcl.Themes,
   Vcl.Styles,
   frameStatistics in '..\statistics\frameStatistics.pas' {Frame1: TFrame},
-  uUIStyles in '..\..\Core\uUIStyles.pas';
+  uUIStyles in '..\..\Core\uUIStyles.pas',
+  frmSplash in 'frmSplash.pas' {Form1};
 
 {$R *.res}
 
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  TStyleManager.TrySetStyle('Onyx Blue');
+
+   with TForm1.Create(Application) do  // ← TForm1 - имя вашей формы
+  try
+    ShowModal;
+  finally
+    Free;
+  end;
+
+   if not TStyleManager.TrySetStyle('Windows10 Green') then
+    if not TStyleManager.TrySetStyle('Windows10 Blue') then
+      TStyleManager.TrySetStyle('Windows10');
   Application.CreateForm(TformMain, formMain);
   Application.Run;
 end.

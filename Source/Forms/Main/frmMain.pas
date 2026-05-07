@@ -13,7 +13,7 @@ uses
   FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
   FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat,
   FireDAC.Phys.SQLiteDef, FireDAC.UI.Intf, FireDAC.Stan.Def, FireDAC.Stan.Pool,
-  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait, System.UITypes, frameStatistics, ReportsModule, uUIStyles;
+  FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.VCLUI.Wait, System.UITypes, frameStatistics, ReportsModule, uUIStyles, Vcl.Themes, Vcl.Styles;
 
 type
   TformMain = class(TForm)
@@ -365,7 +365,7 @@ procedure TformMain.FormCreate(Sender: TObject);
 begin
   // 1. Путь к БД рядом с exe
   FDBPath := GetDBPath;
-
+  Color := clWhite;
   // 2. Проверка файла
   if not FileExists(FDBPath) then
   begin
