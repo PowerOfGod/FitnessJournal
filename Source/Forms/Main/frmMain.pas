@@ -22,14 +22,11 @@ type
     N2: TMenuItem;
     N3: TMenuItem;
     N4: TMenuItem;
-    ToolBar1: TToolBar;
-    btnNewClient: TToolButton;
-    ToolButton1: TToolButton;
-    btnNewVisit: TToolButton;
-    ToolButton2: TToolButton;
-    btnNewSubscription: TToolButton;
-    ToolButton3: TToolButton;
-    btnRefresh: TToolButton;
+    PanelToolbar: TPanel;
+    btnNewClient: TButton;
+    btnNewVisit: TButton;
+    btnNewSubscription: TButton;
+    btnRefresh: TButton;
     PageControl1: TPageControl;
     tsClients: TTabSheet;
     tsSubscription: TTabSheet;
@@ -40,7 +37,6 @@ type
     DateTimePicker1: TDateTimePicker;
     Button1: TButton;
     DBGridVisits: TDBGrid;
-    btnTestDB: TButton;
     DataSourceClients: TDataSource;
     FDQueryClients: TFDQuery;
     DBGridClients: TDBGrid;
@@ -66,6 +62,7 @@ type
     procedure LoadClients;
     procedure LoadSubscription;
     procedure LoadVisits;
+    procedure AutoSizeGridColumns(Grid: TDBGrid);
     procedure btnRefreshClick(Sender: TObject);
     procedure EditClient(ClientID: Integer); // Новый метод
     procedure DeleteClient(ClientID: Integer);
@@ -92,6 +89,11 @@ type
     FSearchText: string;
     FSearchField: Integer;
     procedure ApplySearchFilter;
+     procedure UpdateStatusBar;
+    function GetTodayVisitsCount: Integer;
+    function GetActiveSubscriptionsCount: Integer;
+    procedure SetupToolbarButtons;
+    procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   public
 
     { Public declarations }
@@ -220,6 +222,7 @@ begin
   end;
 
 end;
+
 
 procedure TformMain.SoftDeleteClient(ClientID: Integer; ClientName: string);
 var
@@ -416,6 +419,11 @@ begin
       StatusBar1.Panels[2].Text := 'Ошибка стилей: ' + E.Message;
   end;
 
+   tsClients.Caption := 'Клиенты';
+  tsSubscription.Caption := 'Абонементы';
+  tsStatistics.Caption := 'Статистика';
+  tsVisits.Caption := 'Посещения';
+
   // Привязываем обработчики
   PageControl1.OnChange := PageControl1Change;
   btnRefresh.OnClick := btnRefreshClick;
@@ -429,6 +437,33 @@ begin
 
   FSearchText := '';
   FSearchField := 0;
+
+   UpdateStatusBar;
+
+     SetupToolbarButtons;     // Настраиваем кнопки
+  Self.KeyPreview := True;
+  Self.OnKeyDown := FormKeyDown;
+end;
+
+
+procedure TformMain.AutoSizeGridColumns(Grid: TDBGrid);
+var
+  i: Integer;
+  TotalWidth: Integer;
+  ColWidth: Integer;
+begin
+  if not Grid.DataSource.DataSet.Active then Exit;
+  if Grid.Columns.Count = 0 then Exit;
+
+  TotalWidth := Grid.ClientWidth - 20; // минус полоса прокрутки
+
+  // Равномерно распределяем ширину
+  ColWidth := TotalWidth div Grid.Columns.Count;
+
+  for i := 0 to Grid.Columns.Count - 1 do
+  begin
+    Grid.Columns[i].Width := ColWidth;
+  end;
 end;
 
 procedure TformMain.LoadStatistics;
@@ -472,6 +507,8 @@ begin
 
     FDQuerySubscriptions.Open;
 
+     AutoSizeGridColumns(DBGridClients);
+
     // Настройка ширины колонок
     FDQuerySubscriptions.FieldByName('client_name').DisplayWidth := 25;
     FDQuerySubscriptions.FieldByName('subscription_type').DisplayWidth := 15;
@@ -508,6 +545,8 @@ begin
     on E: Exception do
       ShowMessage('Ошибка загрузки абонементов: ' + E.Message);
   end;
+
+   UpdateStatusBar;
 end;
 
 procedure TformMain.LoadVisits;
@@ -532,6 +571,8 @@ begin
 
     FDQueryVisits.Open;
 
+    AutoSizeGridColumns(DBGridClients);
+
     FDQueryVisits.FieldByName('full_name').DisplayWidth := 25;
     FDQueryVisits.FieldByName('trainer_name').DisplayWidth := 10;
 
@@ -544,6 +585,8 @@ begin
     on E: Exception do
       ShowMessage('Ошибка загрузки посещений: ' + E.Message);
   end;
+
+   UpdateStatusBar;
 end;
 
 procedure TformMain.LoadClients;
@@ -575,6 +618,8 @@ begin
     // 4. Открываем запрос
     FDQueryClients.Open;
 
+    AutoSizeGridColumns(DBGridClients);
+
     ApplySearchFilter;
 
     // 5. Настройка ширины колонок
@@ -597,6 +642,8 @@ begin
       ShowMessage('Ошибка загрузки клиентов: ' + E.Message);
     end;
   end;
+
+   UpdateStatusBar;
 end;
 
 procedure TformMain.PageControl1Change(Sender: TObject);
@@ -1037,5 +1084,108 @@ end;
 // begin
 //
 // end;
+
+function TformMain.GetTodayVisitsCount: Integer;
+var
+  Query: TFDQuery;
+begin
+  Result := 0;
+  if not DB.IsConnected then Exit;
+
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := DB.GetConnection;
+    Query.SQL.Text := 'SELECT COUNT(*) as cnt FROM visits WHERE visit_date = date(''now'')';
+    Query.Open;
+    Result := Query.FieldByName('cnt').AsInteger;
+  finally
+    Query.Free;
+  end;
+end;
+
+function TformMain.GetActiveSubscriptionsCount: Integer;
+var
+  Query: TFDQuery;
+begin
+  Result := 0;
+  if not DB.IsConnected then Exit;
+
+  Query := TFDQuery.Create(nil);
+  try
+    Query.Connection := DB.GetConnection;
+    Query.SQL.Text :=
+      'SELECT COUNT(*) as cnt FROM subscriptions ' +
+      'WHERE is_active = 1 AND date(end_date) >= date(''now'')';
+    Query.Open;
+    Result := Query.FieldByName('cnt').AsInteger;
+  finally
+    Query.Free;
+  end;
+end;
+
+procedure TformMain.UpdateStatusBar;
+var
+  ClientCount, SubCount, VisitCount, TodayVisits, ActiveSubs: Integer;
+begin
+  if not DB.IsConnected then
+  begin
+    StatusBar1.Panels[0].Text := '🔴 БД: не подключена';
+    StatusBar1.Panels[1].Text := '⚠️ Нет данных';
+    StatusBar1.Panels[2].Text := '📊 Статистика: 0';
+    Exit;
+  end;
+
+  // Получаем данные
+  ClientCount := FDQueryClients.RecordCount;
+  SubCount := FDQuerySubscriptions.RecordCount;
+  VisitCount := FDQueryVisits.RecordCount;
+  TodayVisits := GetTodayVisitsCount;
+  ActiveSubs := GetActiveSubscriptionsCount;
+
+  // Обновляем панели
+  StatusBar1.Panels[0].Text := Format('🟢 БД: %s', [ExtractFileName(FDBPath)]);
+  StatusBar1.Panels[1].Text := Format('👥 Клиенты: %d | 📋 Абонементы: %d (актив: %d)',
+    [ClientCount, SubCount, ActiveSubs]);
+  StatusBar1.Panels[2].Text := Format('✅ Посещений сегодня: %d | Всего: %d',
+    [TodayVisits, VisitCount]);
+end;
+
+procedure TformMain.SetupToolbarButtons;
+begin
+  // Настройка панели
+  PanelToolbar.Color := clWhite;
+  PanelToolbar.Height := 48;
+  PanelToolbar.BevelOuter := bvNone;
+
+  // Настройка кнопок
+  btnNewClient.Caption := '➕ Новый клиент';
+  btnNewClient.Hint := 'Добавить нового клиента (F2)';
+  btnNewClient.ShowHint := True;
+
+  btnNewVisit.Caption := '🚪 Вход/Выход';
+  btnNewVisit.Hint := 'Зарегистрировать вход или выход (F3)';
+  btnNewVisit.ShowHint := True;
+
+  btnNewSubscription.Caption := '📋 Абонемент';
+  btnNewSubscription.Hint := 'Оформить новый абонемент (F4)';
+  btnNewSubscription.ShowHint := True;
+
+  btnRefresh.Caption := '🔄 Обновить';
+  btnRefresh.Hint := 'Обновить данные (F5)';
+  btnRefresh.ShowHint := True;
+
+
+end;
+// ========== ГОРЯЧИЕ КЛАВИШИ ==========
+
+procedure TformMain.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  case Key of
+    VK_F2: btnNewClient.Click;
+    VK_F3: btnNewVisit.Click;
+    VK_F4: btnNewSubscription.Click;
+    VK_F5: btnRefresh.Click;
+  end;
+end;
 
 end.

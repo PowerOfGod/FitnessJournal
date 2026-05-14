@@ -19,80 +19,65 @@ object formMain: TformMain
   Position = poScreenCenter
   OnCreate = FormCreate
   TextHeight = 15
-  object ToolBar1: TToolBar
+  object PanelToolbar: TPanel
     Left = 0
     Top = 0
     Width = 956
-    Height = 29
-    ButtonHeight = 30
-    ButtonWidth = 80
-    Caption = 'ToolBar1'
-    Flat = False
-    ParentShowHint = False
-    ShowHint = True
+    Height = 45
+    Align = alTop
+    BevelOuter = bvNone
+    Color = clWhite
+    ParentBackground = False
     TabOrder = 0
-    object btnNewClient: TToolButton
-      Left = 0
-      Top = 0
-      Hint = #1053#1086#1074#1099#1081' '#1082#1083#1080#1077#1085#1090
-      Caption = '  '#1056#1113#1056#187#1056#1105#1056#181#1056#1029#1057#8218'  '
-      ImageIndex = 0
+    object btnNewClient: TButton
+      Left = 8
+      Top = 6
+      Width = 115
+      Height = 33
+      Caption = #226#158#149' '#1053#1086#1074#1099#1081' '#1082#1083#1080#1077#1085#1090
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Segoe UI'
+      Font.Style = []
+      ParentFont = False
+      TabOrder = 0
       OnClick = btnNewClientClick
     end
-    object ToolButton1: TToolButton
-      Left = 80
-      Top = 0
-      Width = 8
-      Caption = 'ToolButton1'
-      ImageIndex = 1
-      Style = tbsSeparator
-    end
-    object btnNewVisit: TToolButton
-      Left = 88
-      Top = 0
-      Hint = #1053#1086#1074#1086#1077' '#1087#1086#1089#1077#1097#1077#1085#1080#1077
-      Caption = '  '#1056#1119#1056#1109#1057#1027#1056#181#1057#8240#1056#181#1056#1029#1056#1105#1056#181'  '
-      ImageIndex = 1
+    object btnNewVisit: TButton
+      Left = 129
+      Top = 6
+      Width = 115
+      Height = 33
+      Caption = #240#159#154#170' '#1042#1093#1086#1076'/'#1042#1099#1093#1086#1076
+      TabOrder = 1
       OnClick = btnNewVisitClick
     end
-    object ToolButton2: TToolButton
-      Left = 168
-      Top = 0
-      Width = 8
-      Caption = 'ToolButton2'
-      ImageIndex = 2
-      Style = tbsSeparator
-    end
-    object btnNewSubscription: TToolButton
-      Left = 176
-      Top = 0
-      Hint = #1053#1086#1074#1099#1081' '#1072#1073#1086#1085#1077#1084#1077#1085#1090
-      Caption = '  '#1056#1106#1056#177#1056#1109#1056#1029#1056#181#1056#1112#1056#181#1056#1029#1057#8218'  '
-      ImageIndex = 2
+    object btnNewSubscription: TButton
+      Left = 250
+      Top = 6
+      Width = 115
+      Height = 33
+      Caption = #240#159#147#139' '#1040#1073#1086#1085#1077#1084#1077#1085#1090
+      TabOrder = 2
       OnClick = btnNewSubscriptionClick
     end
-    object ToolButton3: TToolButton
-      Left = 256
-      Top = 0
-      Width = 8
-      Caption = 'ToolButton3'
-      ImageIndex = 3
-      Style = tbsSeparator
-    end
-    object btnRefresh: TToolButton
-      Left = 264
-      Top = 0
-      Hint = #1054#1073#1085#1086#1074#1080#1090#1100
-      Caption = '  '#1056#1115#1056#177#1056#1029#1056#1109#1056#1030#1056#1105#1057#8218#1057#1034'  '
-      ImageIndex = 3
+    object btnRefresh: TButton
+      Left = 371
+      Top = 6
+      Width = 115
+      Height = 33
+      Caption = #240#159#148#132' '#1054#1073#1085#1086#1074#1080#1090#1100
+      TabOrder = 3
+      OnClick = btnRefreshClick
     end
   end
   object PageControl1: TPageControl
     Left = 0
-    Top = 29
+    Top = 45
     Width = 956
-    Height = 511
-    ActivePage = tsClients
+    Height = 495
+    ActivePage = tsStatistics
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -104,6 +89,7 @@ object formMain: TformMain
     TabHeight = 30
     TabOrder = 1
     TabWidth = 120
+    OnChange = PageControl1Change
     object tsClients: TTabSheet
       Caption = #1050#1083#1080#1077#1085#1090#1099
       object PanelClientSearch: TPanel
@@ -176,7 +162,7 @@ object formMain: TformMain
         Left = 0
         Top = 45
         Width = 948
-        Height = 426
+        Height = 410
         Align = alClient
         DataSource = DataSourceClients
         Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
@@ -217,7 +203,7 @@ object formMain: TformMain
         Left = 0
         Top = 0
         Width = 948
-        Height = 471
+        Height = 455
         Align = alClient
         Caption = 'PanelVisits'
         TabOrder = 0
@@ -251,7 +237,7 @@ object formMain: TformMain
           Left = 1
           Top = 1
           Width = 946
-          Height = 469
+          Height = 453
           Align = alClient
           DataSource = DataSourceVisits
           Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
@@ -265,14 +251,6 @@ object formMain: TformMain
         end
       end
     end
-  end
-  object btnTestDB: TButton
-    Left = 392
-    Top = 24
-    Width = 75
-    Height = 25
-    Caption = #1058#1077#1089#1090' '#1041#1044
-    TabOrder = 2
   end
   object StatusBar1: TStatusBar
     Left = 0
