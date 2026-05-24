@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ToolWin,
   Vcl.Menus, Data.DB, Vcl.Grids, Vcl.DBGrids, Vcl.StdCtrls, Vcl.ExtCtrls,
-  DBModule, AppConsts, DateUtils, // Убрал frmVisitEdit, frmSubscriptionEdit - они не нужны
+  DBModule, AppConsts, DateUtils,
   FireDAC.Stan.Intf, FireDAC.Stan.Option, FireDAC.Stan.Param,
   FireDAC.Stan.Error, FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf,
   FireDAC.Stan.Async, FireDAC.DApt, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
@@ -16,65 +16,50 @@ uses
 
 type
   TFrame1 = class(TFrame)
-    // Панели
     PanelTop: TPanel;
     PageControl1: TPageControl;
     tabGeneral: TTabSheet;
     tabTrainer: TTabSheet;
     tabHourly: TTabSheet;
-
-    // Метки
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
-
-    // Элементы управления
     cmbPeriod: TComboBox;
     dtpDateFrom: TDateTimePicker;
     dtpDateTo: TDateTimePicker;
     btnRefresh: TButton;
-
-    // Компоненты для данных
     MemoStats: TMemo;
     gridDaily: TDBGrid;
     gridTrainer: TDBGrid;
     StatusBar1: TStatusBar;
-
-    // DataSource
     dsDaily: TDataSource;
     dsTrainer: TDataSource;
     dsHourly: TDataSource;
-
-    // Запросы
     qryDaily: TFDQuery;
     qryTrainer: TFDQuery;
     qryHourly: TFDQuery;
-
-    // Таймер
     Timer1: TTimer;
     gridHourly: TDBGrid;
-
-    // Процедуры-обработчики
     procedure cmbPeriodChange(Sender: TObject);
     procedure dtpDateFromChange(Sender: TObject);
     procedure dtpDateToChange(Sender: TObject);
     procedure btnRefreshClick(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
-
   private
     FDateFrom: TDate;
     FDateTo: TDate;
     FIsLoading: Boolean;
-
     procedure UpdateDateRange;
     procedure LoadDailyStats;
     procedure LoadTrainerStats;
     procedure LoadHourlyStats;
     procedure UpdateMemoStats;
-
+    procedure AutoFitGridColumns(Grid: TDBGrid);
+    procedure FormResize(Sender: TObject);
   public
     procedure Initialize;
     procedure RefreshData;
+    procedure UpdateLayout;
   end;
 
 implementation
@@ -82,6 +67,59 @@ implementation
 {$R *.dfm}
 
 { TFrame1 }
+
+procedure TFrame1.AutoFitGridColumns(Grid: TDBGrid);
+var
+  i: Integer;
+  TotalWidth: Integer;
+  VisibleCols: Integer;
+  ColWidth: Integer;
+begin
+  if not Assigned(Grid) then Exit;
+  if not Assigned(Grid.DataSource) then Exit;
+  if not Assigned(Grid.DataSource.DataSet) then Exit;
+  if not Grid.DataSource.DataSet.Active then Exit;
+  if Grid.Columns.Count = 0 then Exit;
+
+  // Подсчитываем только видимые колонки
+  VisibleCols := 0;
+  for i := 0 to Grid.Columns.Count - 1 do
+    if Grid.Columns[i].Visible then
+      Inc(VisibleCols);
+
+  if VisibleCols = 0 then Exit;
+
+  // Получаем доступную ширину (минус полоса прокрутки)
+  TotalWidth := Grid.ClientWidth - 25;
+  if TotalWidth < 100 then Exit;
+
+  // Равномерно распределяем ширину
+  ColWidth := TotalWidth div VisibleCols;
+
+  // Ограничиваем ширину
+  if ColWidth < 80 then ColWidth := 80;
+  if ColWidth > 300 then ColWidth := 300;
+
+  // Применяем ширину ко всем видимым колонкам
+  for i := 0 to Grid.Columns.Count - 1 do
+    if Grid.Columns[i].Visible then
+      Grid.Columns[i].Width := ColWidth;
+end;
+
+procedure TFrame1.FormResize(Sender: TObject);
+begin
+  // При изменении размера подстраиваем все таблицы
+  AutoFitGridColumns(gridDaily);
+  AutoFitGridColumns(gridTrainer);
+  AutoFitGridColumns(gridHourly);
+end;
+
+procedure TFrame1.UpdateLayout;
+begin
+  AutoFitGridColumns(gridDaily);
+  AutoFitGridColumns(gridTrainer);
+  AutoFitGridColumns(gridHourly);
+end;
 
 procedure TFrame1.Initialize;
 begin
@@ -95,27 +133,55 @@ begin
   cmbPeriod.Items.Add('Произвольный период');
   cmbPeriod.ItemIndex := 2; // Месяц по умолчанию
 
+  tabGeneral.Caption := 'Общая статистика';
+  tabTrainer.Caption := 'По тренерам';
+  tabHourly.Caption := 'По часам';
+
   // Устанавливаем начальные даты
   dtpDateFrom.Date := StartOfTheMonth(Date);
   dtpDateTo.Date := Date;
 
-  dsDaily.DataSet := qryDaily;        // DataSource берет данные из запроса
-  gridDaily.DataSource := dsDaily;     // Grid берет данные из DataSource
-
+  // Настраиваем DataSource
+  dsDaily.DataSet := qryDaily;
+  gridDaily.DataSource := dsDaily;
   dsTrainer.DataSet := qryTrainer;
   gridTrainer.DataSource := dsTrainer;
-
   dsHourly.DataSet := qryHourly;
   gridHourly.DataSource := dsHourly;
 
+   // Настройка шрифтов как на других вкладках
+  // Memo для статистики
+  MemoStats.Font.Name := 'Segoe UI';
+  MemoStats.Font.Size := 11;
+  MemoStats.Color := 16777197;  // Светло-желтый фон
 
-  dsDaily.DataSet := qryDaily;        // Для ежедневной статистики
-  dsTrainer.DataSet := qryTrainer;    // Для статистики по тренерам
-  dsHourly.DataSet := qryHourly;
-  // Настраиваем статусную строку
-  StatusBar1.Panels.Clear;
-  StatusBar1.Panels.Add;
-  StatusBar1.Panels.Add;
+  // Таблица Общая статистика
+  gridDaily.Font.Name := 'Segoe UI';
+  gridDaily.Font.Size := 11;
+  gridDaily.TitleFont.Name := 'Segoe UI';
+  gridDaily.TitleFont.Size := 10;
+  gridDaily.TitleFont.Style := [fsBold];
+  gridDaily.TitleFont.Color := clNavy;
+
+  // Таблица По тренерам
+  gridTrainer.Font.Name := 'Segoe UI';
+  gridTrainer.Font.Size := 11;
+  gridTrainer.TitleFont.Name := 'Segoe UI';
+  gridTrainer.TitleFont.Size := 10;
+  gridTrainer.TitleFont.Style := [fsBold];
+  gridTrainer.TitleFont.Color := clNavy;
+
+  // Таблица По часам
+  gridHourly.Font.Name := 'Segoe UI';
+  gridHourly.Font.Size := 11;
+  gridHourly.TitleFont.Name := 'Segoe UI';
+  gridHourly.TitleFont.Size := 10;
+  gridHourly.TitleFont.Style := [fsBold];
+  gridHourly.TitleFont.Color := clNavy;
+
+
+
+  // Настройка StatusBar
   StatusBar1.Panels[0].Text := 'Готов';
   StatusBar1.Panels[0].Width := 200;
   StatusBar1.Panels[1].Text := 'Всего: 0';
@@ -128,8 +194,11 @@ begin
     qryHourly.Connection := DB.GetConnection;
   end;
 
+  // Подключаем обработчик изменения размера
+  Self.OnResize := FormResize;
+
   // Настраиваем таймер (обновление каждые 5 минут)
-  Timer1.Interval := 300000; // 5 минут
+  Timer1.Interval := 300000;
   Timer1.Enabled := True;
 
   // Загружаем данные
@@ -148,22 +217,24 @@ begin
   StatusBar1.Panels[0].Text := 'Загрузка данных...';
   try
     UpdateDateRange;
-    LoadDailyStats;
+   LoadDailyStats;
     LoadTrainerStats;
     LoadHourlyStats;
     UpdateMemoStats;
 
-     StatusBar1.Panels[0].Text := Format('Период: %s - %s',
+    StatusBar1.Panels[0].Text := Format('Период: %s - %s',
       [DateToStr(FDateFrom), DateToStr(FDateTo)]);
-  except
 
+    // Подстраиваем колонки после загрузки
+    UpdateLayout;
+  except
     on E: Exception do
     begin
       StatusBar1.Panels[0].Text := 'Ошибка загрузки';
       ShowMessage('Ошибка при загрузке статистики: ' + E.Message);
     end;
   end;
-   Screen.Cursor := crDefault;
+  Screen.Cursor := crDefault;
 end;
 
 procedure TFrame1.Timer1Timer(Sender: TObject);
@@ -240,9 +311,6 @@ begin
     dtpDateFrom.Enabled := (cmbPeriod.ItemIndex = 5);
     dtpDateTo.Enabled := (cmbPeriod.ItemIndex = 5);
 
-    StatusBar1.Panels[0].Text := Format('Период: %s - %s',
-      [DateToStr(FDateFrom), DateToStr(FDateTo)]);
-
   finally
     FIsLoading := False;
   end;
@@ -252,8 +320,6 @@ procedure TFrame1.LoadDailyStats;
 begin
   qryDaily.Close;
 
-//   ShowMessage('Загружаем статистику за период: ' +
-//              DateToStr(FDateFrom) + ' - ' + DateToStr(FDateTo));
   qryDaily.SQL.Text :=
     'SELECT ' +
     '  visit_date, ' +
@@ -269,13 +335,18 @@ begin
   qryDaily.ParamByName('date_to').AsDate := FDateTo;
   qryDaily.Open;
 
-  // Настройка заголовков
+  // Настройка заголовков и выравнивания
   if qryDaily.Active then
   begin
     qryDaily.FieldByName('visit_date').DisplayLabel := 'Дата';
     qryDaily.FieldByName('visit_count').DisplayLabel := 'Посещений';
     qryDaily.FieldByName('unique_clients').DisplayLabel := 'Уникальных';
     qryDaily.FieldByName('total_minutes').DisplayLabel := 'Минут';
+
+    // Выравнивание по левому краю
+    qryDaily.FieldByName('visit_count').Alignment := taLeftJustify;
+    qryDaily.FieldByName('unique_clients').Alignment := taLeftJustify;
+    qryDaily.FieldByName('total_minutes').Alignment := taLeftJustify;
   end;
 end;
 
@@ -290,6 +361,7 @@ begin
     'FROM visits ' +
     'WHERE visit_date BETWEEN :date_from AND :date_to ' +
     '  AND trainer_name IS NOT NULL ' +
+    '  AND trainer_name != "" ' +
     'GROUP BY trainer_name ' +
     'ORDER BY visit_count DESC';
 
@@ -297,12 +369,14 @@ begin
   qryTrainer.ParamByName('date_to').AsDate := FDateTo;
   qryTrainer.Open;
 
-  // Настройка заголовков
   if qryTrainer.Active then
   begin
     qryTrainer.FieldByName('trainer_name').DisplayLabel := 'Тренер';
     qryTrainer.FieldByName('visit_count').DisplayLabel := 'Посещений';
     qryTrainer.FieldByName('total_minutes').DisplayLabel := 'Минут';
+
+    qryTrainer.FieldByName('visit_count').Alignment := taLeftJustify;
+    qryTrainer.FieldByName('total_minutes').Alignment := taLeftJustify;
   end;
 end;
 
@@ -311,24 +385,34 @@ begin
   qryHourly.Close;
   qryHourly.SQL.Text :=
     'SELECT ' +
-    '  CAST(strftime(''%H'', entry_time) AS INTEGER) as hour, ' +
+    '  CASE WHEN entry_time IS NOT NULL AND entry_time != "" ' +
+    '    THEN CAST(strftime(''%H'', entry_time) AS INTEGER) ' +
+    '    ELSE 0 END as hour, ' +
     '  COUNT(*) as visit_count ' +
     'FROM visits ' +
     'WHERE visit_date BETWEEN :date_from AND :date_to ' +
-    '  AND entry_time IS NOT NULL ' +
     'GROUP BY hour ' +
     'ORDER BY hour';
 
   qryHourly.ParamByName('date_from').AsDate := FDateFrom;
   qryHourly.ParamByName('date_to').AsDate := FDateTo;
-  qryHourly.Open;
+
+  try
+    qryHourly.Open;
+  except
+    on E: Exception do
+    begin
+      ShowMessage('Ошибка в LoadHourlyStats: ' + E.Message);
+      Exit;
+    end;
+  end;
 
   if qryHourly.Active and not qryHourly.IsEmpty then
   begin
     qryHourly.FieldByName('hour').DisplayLabel := 'Час';
-    qryHourly.FieldByName('hour').DisplayWidth := 10;
     qryHourly.FieldByName('visit_count').DisplayLabel := 'Посещений';
-    qryHourly.FieldByName('visit_count').DisplayWidth := 15;
+    qryHourly.FieldByName('hour').Alignment := taLeftJustify;
+    qryHourly.FieldByName('visit_count').Alignment := taLeftJustify;
   end;
 end;
 
@@ -340,15 +424,52 @@ begin
   TotalMinutes := 0;
   TotalUnique := 0;
 
-  qryDaily.First;
-  while not qryDaily.Eof do
+  // Проверка, что запрос активен и не пуст
+  if not qryDaily.Active then
   begin
-    TotalVisits := TotalVisits + qryDaily.FieldByName('visit_count').AsInteger;
-    TotalMinutes := TotalMinutes + qryDaily.FieldByName('total_minutes').AsInteger;
-    TotalUnique := TotalUnique + qryDaily.FieldByName('unique_clients').AsInteger;
-    qryDaily.Next;
+    StatusBar1.Panels[1].Text := 'Всего: 0';
+    Exit;
   end;
 
+  if qryDaily.IsEmpty then
+  begin
+    MemoStats.Clear;
+    MemoStats.Lines.Add(StringOfChar('=', 50));
+    MemoStats.Lines.Add('ИТОГОВАЯ СТАТИСТИКА');
+    MemoStats.Lines.Add(StringOfChar('=', 50));
+    MemoStats.Lines.Add('');
+    MemoStats.Lines.Add('Нет данных за выбранный период');
+    StatusBar1.Panels[1].Text := 'Всего: 0';
+    Exit;
+  end;
+
+  try
+    qryDaily.First;
+    while not qryDaily.Eof do
+    begin
+      // Безопасное чтение с проверкой на NULL
+      if not qryDaily.FieldByName('visit_count').IsNull then
+        TotalVisits := TotalVisits + qryDaily.FieldByName('visit_count').AsInteger;
+
+      if not qryDaily.FieldByName('total_minutes').IsNull then
+        TotalMinutes := TotalMinutes + qryDaily.FieldByName('total_minutes').AsInteger;
+
+      if not qryDaily.FieldByName('unique_clients').IsNull then
+        TotalUnique := TotalUnique + qryDaily.FieldByName('unique_clients').AsInteger;
+
+      qryDaily.Next;
+    end;
+  except
+    on E: Exception do
+    begin
+      MemoStats.Clear;
+      MemoStats.Lines.Add('Ошибка при расчете статистики: ' + E.Message);
+      StatusBar1.Panels[1].Text := 'Ошибка расчета';
+      Exit;
+    end;
+  end;
+
+  // Заполнение MemoStats
   MemoStats.Clear;
   MemoStats.Lines.Add(StringOfChar('=', 50));
   MemoStats.Lines.Add('ИТОГОВАЯ СТАТИСТИКА');
@@ -358,8 +479,12 @@ begin
     [DateToStr(FDateFrom), DateToStr(FDateTo)]));
   MemoStats.Lines.Add(Format('Всего посещений: %d', [TotalVisits]));
   MemoStats.Lines.Add(Format('Уникальных клиентов: %d', [TotalUnique]));
-  MemoStats.Lines.Add(Format('Общее время: %d мин (%.1f ч)',
-    [TotalMinutes, TotalMinutes / 60]));
+
+  if TotalMinutes > 0 then
+    MemoStats.Lines.Add(Format('Общее время: %d мин (%.1f ч)',
+      [TotalMinutes, TotalMinutes / 60]))
+  else
+    MemoStats.Lines.Add('Общее время: 0 мин');
 
   if TotalVisits > 0 then
     MemoStats.Lines.Add(Format('Средняя длительность: %.0f мин',
@@ -391,4 +516,4 @@ begin
   RefreshData;
 end;
 
-end. // <-- Это должен быть ОДИН end. в самом конце
+end.

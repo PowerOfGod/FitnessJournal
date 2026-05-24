@@ -20,7 +20,6 @@ type
     MainMenu1: TMainMenu;
     N1: TMenuItem;
     N2: TMenuItem;
-    N3: TMenuItem;
     N4: TMenuItem;
     PanelToolbar: TPanel;
     btnNewClient: TButton;
@@ -33,10 +32,8 @@ type
     tsStatistics: TTabSheet;
     tsVisits: TTabSheet;
     PanelVisits: TPanel;
-    Label1: TLabel;
-    DateTimePicker1: TDateTimePicker;
-    Button1: TButton;
     DBGridVisits: TDBGrid;
+    DBGridSubscriptions: TDBGrid;
     DataSourceClients: TDataSource;
     FDQueryClients: TFDQuery;
     DBGridClients: TDBGrid;
@@ -49,6 +46,8 @@ type
     PanelClientSearch: TPanel;
     lblSearch: TLabel;
     edtSearch: TEdit;
+    mnuAbout: TMenuItem;
+    mnuHelp: TMenuItem;
     btnClearSearch: TButton;
     rbName: TRadioButton;
     rbPhone: TRadioButton;
@@ -62,7 +61,6 @@ type
     procedure LoadClients;
     procedure LoadSubscription;
     procedure LoadVisits;
-    procedure AutoSizeGridColumns(Grid: TDBGrid);
     procedure btnRefreshClick(Sender: TObject);
     procedure EditClient(ClientID: Integer); // Новый метод
     procedure DeleteClient(ClientID: Integer);
@@ -82,6 +80,7 @@ type
     procedure edtSearchChange(Sender: TObject);
     procedure btnClearSearchClick(Sender: TObject);
     procedure rbSearchClick(Sender: TObject);
+    procedure N2Click(Sender: TObject);
   private
     { Private declarations }
     FDBPath: string;
@@ -94,6 +93,11 @@ type
     function GetActiveSubscriptionsCount: Integer;
     procedure SetupToolbarButtons;
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure AutoFitGridColumns(Grid: TDBGrid);
+    procedure FormResize(Sender: TObject);
+    procedure UpdateStatisticsLayout;
+    procedure mnuHelpClick(Sender: TObject);
+    procedure mnuAboutClick(Sender: TObject);
   public
 
     { Public declarations }
@@ -105,6 +109,73 @@ var
 implementation
 
 {$R *.dfm}
+
+procedure TformMain.N2Click(Sender: TObject);
+begin
+  Close;  // Закрыть приложение
+end;
+
+procedure TformMain.UpdateStatisticsLayout;
+begin
+  if Assigned(FStatsFrame) then
+  begin
+    // Принудительно пересчитываем размеры таблиц в статистике
+    FStatsFrame.UpdateLayout;
+  end;
+end;
+
+procedure TformMain.AutoFitGridColumns(Grid: TDBGrid);
+var
+  i: Integer;
+  TotalWidth: Integer;
+  VisibleCols: Integer;
+  ColWidth: Integer;
+begin
+  if not Assigned(Grid) then Exit;
+  if not Grid.DataSource.DataSet.Active then Exit;
+  if Grid.Columns.Count = 0 then Exit;
+
+  // Подсчитываем только видимые колонки
+  VisibleCols := 0;
+  for i := 0 to Grid.Columns.Count - 1 do
+    if Grid.Columns[i].Visible then
+      Inc(VisibleCols);
+
+  if VisibleCols = 0 then Exit;
+
+  // Получаем доступную ширину (минус полоса прокрутки и отступы)
+  TotalWidth := Grid.ClientWidth - 25;
+
+  if TotalWidth < 100 then Exit;
+
+  // Равномерно распределяем ширину между всеми видимыми колонками
+  ColWidth := TotalWidth div VisibleCols;
+
+  // Минимальная ширина колонки
+  if ColWidth < 60 then
+    ColWidth := 60;
+
+  // Применяем ширину ко всем видимым колонкам
+  for i := 0 to Grid.Columns.Count - 1 do
+    if Grid.Columns[i].Visible then
+      Grid.Columns[i].Width := ColWidth;
+end;
+
+
+
+ procedure TformMain.FormResize(Sender: TObject);
+begin
+  // Подстраиваем активную таблицу главной формы
+  if PageControl1.ActivePage = tsClients then
+    AutoFitGridColumns(DBGridClients)
+  else if PageControl1.ActivePage = tsSubscription then
+    AutoFitGridColumns(DBGridSubscriptions)
+  else if PageControl1.ActivePage = tsVisits then
+    AutoFitGridColumns(DBGridVisits)
+  else if PageControl1.ActivePage = tsStatistics then
+    UpdateStatisticsLayout;  // ← ВЫЗЫВАЕМ ДЛЯ СТАТИСТИКИ
+end;
+
 
 procedure TformMain.EditClient(ClientID: Integer);
 var
@@ -369,6 +440,18 @@ begin
   // 1. Путь к БД рядом с exe
   FDBPath := GetDBPath;
   Color := clWhite;
+    DBGridClients.Font.Size := 11;
+  DBGridClients.TitleFont.Size := 11;
+
+
+  N1.Caption := 'Файл';
+  N2.Caption := 'Выход';
+
+  DBGridSubscriptions.Font.Size := 11;
+  DBGridSubscriptions.TitleFont.Size := 11;
+
+  DBGridVisits.Font.Size := 11;
+  DBGridVisits.TitleFont.Size := 11;
   // 2. Проверка файла
   if not FileExists(FDBPath) then
   begin
@@ -378,6 +461,8 @@ begin
 
     StatusBar1.Panels[1].Text := 'БД: не найдена';
     Exit;
+
+
   end;
 
   // 3. Подключаемся
@@ -443,28 +528,21 @@ begin
      SetupToolbarButtons;     // Настраиваем кнопки
   Self.KeyPreview := True;
   Self.OnKeyDown := FormKeyDown;
+
+  edtSearch.OnChange := edtSearchChange;
+  btnClearSearch.OnClick := btnClearSearchClick;
+  rbName.OnClick := rbSearchClick;
+  rbPhone.OnClick := rbSearchClick;
+  rbEmail.OnClick := rbSearchClick;
+
+
+   mnuHelp.OnClick := mnuHelpClick;
+    mnuAbout.OnClick := mnuAboutClick;
+
+   Self.OnResize := FormResize;
 end;
 
 
-procedure TformMain.AutoSizeGridColumns(Grid: TDBGrid);
-var
-  i: Integer;
-  TotalWidth: Integer;
-  ColWidth: Integer;
-begin
-  if not Grid.DataSource.DataSet.Active then Exit;
-  if Grid.Columns.Count = 0 then Exit;
-
-  TotalWidth := Grid.ClientWidth - 20; // минус полоса прокрутки
-
-  // Равномерно распределяем ширину
-  ColWidth := TotalWidth div Grid.Columns.Count;
-
-  for i := 0 to Grid.Columns.Count - 1 do
-  begin
-    Grid.Columns[i].Width := ColWidth;
-  end;
-end;
 
 procedure TformMain.LoadStatistics;
 begin
@@ -503,11 +581,37 @@ begin
       '     ELSE 3 END as status_order, ' +
       'CAST(s.notes AS VARCHAR(100)) AS notes ' + 'FROM subscriptions s ' +
       'LEFT JOIN clients c ON c.id = s.client_id ' +
-      'ORDER BY status_order, s.end_date DESC';
+      'ORDER BY s.id DESC';
 
     FDQuerySubscriptions.Open;
+     if DBGridSubscriptions.Columns.Count > 0 then
+  begin
+    DBGridSubscriptions.Columns[0].Visible := False;  // ID
+    DBGridSubscriptions.Columns[1].Visible := False;
+    DBGridSubscriptions.Columns[10].Visible := False;
+    DBGridSubscriptions.Columns[11].Visible := False;  // client_id
 
-     AutoSizeGridColumns(DBGridClients);
+
+    DBGridSubscriptions.Columns[2].Title.Caption := 'Клиент';
+    DBGridSubscriptions.Columns[3].Title.Caption := 'Тип абонемента';
+    DBGridSubscriptions.Columns[4].Title.Caption := 'Дата начала';
+    DBGridSubscriptions.Columns[5].Title.Caption := 'Дата окончания';
+    DBGridSubscriptions.Columns[6].Title.Caption := 'Цена, руб';
+    DBGridSubscriptions.Columns[7].Title.Caption := 'Всего';
+    DBGridSubscriptions.Columns[8].Title.Caption := 'Осталось';
+    DBGridSubscriptions.Columns[9].Title.Caption := 'Статус';
+
+    // Увеличиваем нужные колонки
+    DBGridSubscriptions.Columns[2].Width := 200;  // client_name - увеличили
+    DBGridSubscriptions.Columns[3].Width := 125;
+     DBGridSubscriptions.Columns[7].Width := 50;
+      DBGridSubscriptions.Columns[8].Width := 50;  // subscription_type
+    DBGridSubscriptions.Columns[9].Width := 120;
+    DBGridSubscriptions.Columns[10].Width := 25;
+    DBGridSubscriptions.Columns[11].Width := 120;   // status
+  end;
+
+
 
     // Настройка ширины колонок
     FDQuerySubscriptions.FieldByName('client_name').DisplayWidth := 25;
@@ -546,7 +650,10 @@ begin
       ShowMessage('Ошибка загрузки абонементов: ' + E.Message);
   end;
 
+
+   AutoFitGridColumns(DBGridSubscriptions);
    UpdateStatusBar;
+
 end;
 
 procedure TformMain.LoadVisits;
@@ -571,7 +678,26 @@ begin
 
     FDQueryVisits.Open;
 
-    AutoSizeGridColumns(DBGridClients);
+     if DBGridVisits.Columns.Count > 0 then
+  begin
+    DBGridVisits.Columns[0].Visible := False;  // ID
+    DBGridVisits.Columns[1].Visible := False;
+    DBGridVisits.Columns[8].Visible := False; // client_id
+    DBGridVisits.Columns[6].Alignment := taLeftJustify;
+
+    DBGridVisits.Columns[2].Title.Caption := 'Клиент';
+    DBGridVisits.Columns[3].Title.Caption := 'Дата';
+    DBGridVisits.Columns[4].Title.Caption := 'Вход';
+    DBGridVisits.Columns[5].Title.Caption := 'Выход';
+    DBGridVisits.Columns[6].Title.Caption := 'Длительность, мин';
+    DBGridVisits.Columns[7].Title.Caption := 'Тренер';
+
+
+    // Увеличиваем нужные колонки
+    DBGridVisits.Columns[2].Width := 250;  // full_name - увеличили
+    DBGridVisits.Columns[7].Width := 200;  // trainer_name - увеличили
+  end;
+
 
     FDQueryVisits.FieldByName('full_name').DisplayWidth := 25;
     FDQueryVisits.FieldByName('trainer_name').DisplayWidth := 10;
@@ -585,7 +711,7 @@ begin
     on E: Exception do
       ShowMessage('Ошибка загрузки посещений: ' + E.Message);
   end;
-
+     AutoFitGridColumns(DBGridVisits);
    UpdateStatusBar;
 end;
 
@@ -601,6 +727,8 @@ begin
 
     // 1. Закрываем запрос
     FDQueryClients.Close;
+
+
 
     // 2. Проверяем и устанавливаем подключение
     if not Assigned(FDQueryClients.Connection) then
@@ -618,7 +746,32 @@ begin
     // 4. Открываем запрос
     FDQueryClients.Open;
 
-    AutoSizeGridColumns(DBGridClients);
+
+
+    if DBGridClients.Columns.Count > 0 then
+  begin
+
+     DBGridClients.Columns[0].Visible := False;
+     DBGridClients.Columns[5].Visible := False;
+
+
+      DBGridClients.Columns[1].Title.Caption := 'ФИО клиента';
+    DBGridClients.Columns[2].Title.Caption := 'Телефон';
+    DBGridClients.Columns[3].Title.Caption := 'Email';
+    DBGridClients.Columns[4].Title.Caption := 'Абонемент';
+
+    DBGridClients.Columns[0].Width := 50;    // ID
+    DBGridClients.Columns[1].Width := 200;   // ФИО
+    DBGridClients.Columns[2].Width := 120;   // Телефон
+    DBGridClients.Columns[3].Width := 180;   // Email
+    DBGridClients.Columns[4].Width := 130;   // Тип абонемента
+
+     AutoFitGridColumns(DBGridClients);
+  end;
+
+
+
+
 
     ApplySearchFilter;
 
@@ -668,9 +821,12 @@ begin
       end;
     2: // <-- ЭТО ВКЛАДКА СТАТИСТИКИ (индекс 2)
       begin
-        StatusBar1.Panels[0].Text := 'Статистика';
+         StatusBar1.Panels[0].Text := 'Статистика';
         if Assigned(FStatsFrame) then
-          FStatsFrame.RefreshData;  // Обновляем данные
+        begin
+          FStatsFrame.RefreshData;
+          UpdateStatisticsLayout;  // ← ДОБАВИТЬ
+        end;
       end;
     3:
       begin
@@ -680,6 +836,13 @@ begin
           IntToStr(FDQueryVisits.RecordCount);
       end;
   end;
+
+   if PageControl1.ActivePage = tsClients then
+    AutoFitGridColumns(DBGridClients)
+  else if PageControl1.ActivePage = tsSubscription then
+    AutoFitGridColumns(DBGridSubscriptions)
+  else if PageControl1.ActivePage = tsVisits then
+    AutoFitGridColumns(DBGridVisits);
 end;
 
 procedure TformMain.FormDestroy(Sender: TObject);
@@ -1040,24 +1203,32 @@ procedure TformMain.ApplySearchFilter;
 var
   TotalCount: Integer;
   FilterExpr: string;
+   SearchText: string;
 begin
   if not DB.IsConnected or not FDQueryClients.Active then
-    Exit;
+  begin
+      Exit;
+  end;
+
 
   TotalCount := FDQueryClients.RecordCount;
+
   FDQueryClients.Filtered := False;
 
-  if FSearchText <> '' then
+ if Trim(FSearchText) <> '' then
   begin
-    FSearchText := StringReplace(FSearchText, '''', '''''', [rfReplaceAll]);
+    // Переводим в ВЕРХНИЙ РЕГИСТР (работает и с русскими буквами!)
+    SearchText := AnsiUpperCase(Trim(FSearchText));
+    SearchText := StringReplace(SearchText, '''', '''''', [rfReplaceAll]);
 
     case FSearchField of
-      0: FilterExpr := 'full_name LIKE ''%' + FSearchText + '%''';
-      1: FilterExpr := 'phone LIKE ''%' + FSearchText + '%''';
-      2: FilterExpr := 'email LIKE ''%' + FSearchText + '%''';
+      0: FilterExpr := 'UPPER(full_name) LIKE ''%' + SearchText + '%''';   // ФИО
+      1: FilterExpr := 'UPPER(phone) LIKE ''%' + SearchText + '%''';       // Телефон
+      2: FilterExpr := 'UPPER(email) LIKE ''%' + SearchText + '%''';       // Email
     else
-      FilterExpr := 'full_name LIKE ''%' + FSearchText + '%''';
+      FilterExpr := 'UPPER(full_name) LIKE ''%' + SearchText + '%''';
     end;
+
 
     FDQueryClients.Filter := FilterExpr;
     FDQueryClients.Filtered := True;
@@ -1187,5 +1358,55 @@ begin
     VK_F5: btnRefresh.Click;
   end;
 end;
+
+procedure TformMain.mnuHelpClick(Sender: TObject);
+begin
+  ShowMessage(
+    '📖 СПРАВКА ПО ПРОГРАММЕ' + sLineBreak + sLineBreak +
+    '─────────────────────────────────────────────' + sLineBreak +
+    '  БЫСТРЫЕ КЛАВИШИ:                           ' + sLineBreak +
+    '─────────────────────────────────────────────' + sLineBreak +
+    '  F2  - Новый клиент                         ' + sLineBreak +
+    '  F3  - Вход/Выход                           ' + sLineBreak +
+    '  F4  - Новый абонемент                      ' + sLineBreak +
+    '  F5  - Обновить                             ' + sLineBreak +
+    '  F6  - Вкладка "Клиенты"                    ' + sLineBreak +
+    '  F7  - Вкладка "Абонементы"                 ' + sLineBreak +
+    '  F8  - Вкладка "Посещения"                  ' + sLineBreak +
+    '─────────────────────────────────────────────' + sLineBreak + sLineBreak +
+    '📌 РАБОТА С КЛИЕНТАМИ:' + sLineBreak +
+    '• Двойной клик по клиенту - редактирование/удаление' + sLineBreak +
+    '• Поиск клиентов - по ФИО, телефону или Email' + sLineBreak + sLineBreak +
+    '📌 РАБОТА С ПОСЕЩЕНИЯМИ:' + sLineBreak +
+    '• Двойной клик по посещению - завершение тренировки' + sLineBreak +
+    '• При входе клиента автоматически проверяется абонемент' + sLineBreak + sLineBreak +
+    '📌 ОТЧЕТЫ:' + sLineBreak +
+    '• Все отчеты можно экспортировать в Excel' + sLineBreak +
+    '• Статистика обновляется автоматически'
+  );
+end;
+
+procedure TformMain.mnuAboutClick(Sender: TObject);
+begin
+  ShowMessage(
+    '🏋️ ФИТНЕС-ЦЕНТР' + sLineBreak +
+    'Журнал посещений' + sLineBreak + sLineBreak +
+    'Версия: 1.0.0' + sLineBreak + sLineBreak +
+    'Разработчик: Савченко Владислав' + sLineBreak + sLineBreak +
+    '─────────────────────────────────────────────' + sLineBreak + sLineBreak +
+    'Функционал программы:' + sLineBreak +
+    '• Ведение базы данных клиентов' + sLineBreak +
+    '• Оформление и учет абонементов' + sLineBreak +
+    '• Регистрация посещений (вход/выход)' + sLineBreak +
+    '• Расчет длительности тренировок' + sLineBreak +
+    '• Генерация отчетов (клиенты, абонементы, посещения)' + sLineBreak +
+    '• Статистика по тренерам и часам' + sLineBreak +
+    '• Экспорт отчетов в Excel' + sLineBreak +
+    '• Поиск и фильтрация данных' + sLineBreak + sLineBreak +
+    '─────────────────────────────────────────────' + sLineBreak + sLineBreak +
+    '© 2026 Фитнес-центр'
+  );
+end;
+
 
 end.

@@ -77,7 +77,7 @@ object formMain: TformMain
     Top = 45
     Width = 956
     Height = 495
-    ActivePage = tsStatistics
+    ActivePage = tsClients
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -181,8 +181,9 @@ object formMain: TformMain
       object DBGridSubscriptions: TDBGrid
         Left = 0
         Top = 0
-        Width = 953
-        Height = 476
+        Width = 948
+        Height = 455
+        Align = alClient
         DataSource = DataSourceSubscriptions
         TabOrder = 0
         TitleFont.Charset = DEFAULT_CHARSET
@@ -207,32 +208,6 @@ object formMain: TformMain
         Align = alClient
         Caption = 'PanelVisits'
         TabOrder = 0
-        object Label1: TLabel
-          Left = 19
-          Top = 16
-          Width = 26
-          Height = 13
-          Caption = #1044#1072#1090#1072
-          ParentShowHint = False
-          ShowHint = False
-        end
-        object DateTimePicker1: TDateTimePicker
-          Left = 58
-          Top = 8
-          Width = 186
-          Height = 23
-          Date = 46045.000000000000000000
-          Time = 0.425898599540232700
-          TabOrder = 0
-        end
-        object Button1: TButton
-          Left = 272
-          Top = 6
-          Width = 75
-          Height = 25
-          Caption = #1055#1086#1082#1072#1079#1072#1090#1100
-          TabOrder = 1
-        end
         object DBGridVisits: TDBGrid
           Left = 1
           Top = 1
@@ -241,7 +216,7 @@ object formMain: TformMain
           Align = alClient
           DataSource = DataSourceVisits
           Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
-          TabOrder = 2
+          TabOrder = 0
           TitleFont.Charset = DEFAULT_CHARSET
           TitleFont.Color = clWindowText
           TitleFont.Height = -11
@@ -281,13 +256,12 @@ object formMain: TformMain
     Left = 304
     Top = 224
     object N1: TMenuItem
-      Caption = #1060#1072#1081#1083
+      Caption = #1056#164#1056#176#1056#8470#1056#187
       object N2: TMenuItem
-        Caption = #1042#1099#1093#1086#1076
+        Caption = #1056#8217#1057#8249#1057#8230#1056#1109#1056#1169
+        ShortCut = 16499
+        OnClick = N2Click
       end
-    end
-    object N3: TMenuItem
-      Caption = #1054#1087#1077#1088#1072#1094#1080#1080
     end
     object mnReports: TMenuItem
       Caption = #1054#1090#1095#1077#1090#1099
@@ -314,6 +288,16 @@ object formMain: TformMain
     end
     object N4: TMenuItem
       Caption = #1055#1086#1084#1086#1097#1100
+      object mnuHelp: TMenuItem
+        Caption = #1057#1087#1088#1072#1074#1082#1072
+        ShortCut = 112
+      end
+      object N5: TMenuItem
+        Caption = '-'
+      end
+      object mnuAbout: TMenuItem
+        Caption = #1054' '#1087#1088#1086#1075#1088#1072#1084#1084#1077
+      end
     end
   end
   object DataSourceClients: TDataSource
