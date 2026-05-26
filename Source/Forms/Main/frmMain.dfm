@@ -77,7 +77,7 @@ object formMain: TformMain
     Top = 45
     Width = 956
     Height = 495
-    ActivePage = tsClients
+    ActivePage = tsStatistics
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText

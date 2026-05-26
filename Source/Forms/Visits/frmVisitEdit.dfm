@@ -2,7 +2,7 @@ object frmVisitEdit1: TfrmVisitEdit1
   Left = 0
   Top = 0
   BorderStyle = bsDialog
-  Caption = 'Регистрация посещения'
+  Caption = #1055#1086#1089#1077#1097#1077#1085#1080#1077
   ClientHeight = 480
   ClientWidth = 480
   Color = 16744448
@@ -13,10 +13,11 @@ object frmVisitEdit1: TfrmVisitEdit1
   Font.Style = []
   Position = poScreenCenter
   OnCreate = FormCreate
+  TextHeight = 15
   object lblClient: TLabel
     Left = 24
     Top = 30
-    Width = 39
+    Width = 42
     Height = 15
     Caption = #1050#1083#1080#1077#1085#1090
     Font.Charset = DEFAULT_CHARSET
@@ -29,7 +30,7 @@ object frmVisitEdit1: TfrmVisitEdit1
   object lblPhone: TLabel
     Left = 24
     Top = 90
-    Width = 48
+    Width = 50
     Height = 15
     Caption = #1058#1077#1083#1077#1092#1086#1085
     Font.Charset = DEFAULT_CHARSET
@@ -42,7 +43,7 @@ object frmVisitEdit1: TfrmVisitEdit1
   object lblSubscription: TLabel
     Left = 24
     Top = 150
-    Width = 67
+    Width = 64
     Height = 15
     Caption = #1040#1073#1086#1085#1077#1084#1077#1085#1090
     Font.Charset = DEFAULT_CHARSET
@@ -55,7 +56,7 @@ object frmVisitEdit1: TfrmVisitEdit1
   object lblTrainer: TLabel
     Left = 24
     Top = 210
-    Width = 44
+    Width = 41
     Height = 15
     Caption = #1058#1088#1077#1085#1077#1088
     Font.Charset = DEFAULT_CHARSET
@@ -68,7 +69,7 @@ object frmVisitEdit1: TfrmVisitEdit1
   object lblNotes: TLabel
     Left = 24
     Top = 270
-    Width = 50
+    Width = 49
     Height = 15
     Caption = #1047#1072#1084#1077#1090#1082#1080
     Font.Charset = DEFAULT_CHARSET
@@ -82,7 +83,7 @@ object frmVisitEdit1: TfrmVisitEdit1
     Left = 24
     Top = 51
     Width = 430
-    Height = 30
+    Height = 23
     Style = csDropDownList
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlack
@@ -97,7 +98,7 @@ object frmVisitEdit1: TfrmVisitEdit1
     Left = 24
     Top = 111
     Width = 430
-    Height = 30
+    Height = 23
     Color = clBtnFace
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlack
@@ -112,7 +113,7 @@ object frmVisitEdit1: TfrmVisitEdit1
     Left = 24
     Top = 171
     Width = 430
-    Height = 30
+    Height = 23
     Color = clBtnFace
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlack
@@ -127,7 +128,7 @@ object frmVisitEdit1: TfrmVisitEdit1
     Left = 24
     Top = 231
     Width = 430
-    Height = 30
+    Height = 23
     Style = csDropDownList
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlack

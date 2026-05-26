@@ -105,7 +105,7 @@ object frmClientEdit1: TfrmClientEdit1
     Font.Style = []
     ParentFont = False
     TabOrder = 1
-    TextHint = '+7 (XXX) XXX-XX-XX'
+    TextHint = '+375 (XX) XXX-XX-XX'
   end
   object Edit3: TEdit
     Left = 24

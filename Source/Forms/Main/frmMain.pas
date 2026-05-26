@@ -1356,6 +1356,10 @@ begin
     VK_F3: btnNewVisit.Click;
     VK_F4: btnNewSubscription.Click;
     VK_F5: btnRefresh.Click;
+
+    VK_F6: PageControl1.ActivePage := tsClients;
+    VK_F7: PageControl1.ActivePage := tsSubscription;
+    VK_F8: PageControl1.ActivePage := tsVisits;
   end;
 end;
 
