@@ -63,46 +63,40 @@ implementation
 
 procedure TfrmVisitEdit1.cbClientChange(Sender: TObject);
 begin
-  // ========== ШАГ 1: ПРОВЕРКА, ЧТО ВЫБРАН КЛИЕНТ ==========
+
 
   if cbClient.ItemIndex >= 0 then
   begin
-    // ========== ШАГ 2: ПОЛУЧАЕМ ID КЛИЕНТА ==========
 
-    // ВАЖНО: В Items.Objects мы сохранили ID клиента при загрузке
-    // Сейчас мы его извлекаем и преобразуем обратно в Integer
+
+
     FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
 
 
-    // ========== ШАГ 3: ЗАГРУЖАЕМ ДАННЫЕ КЛИЕНТА ==========
-
-    // Загружаем телефон и информацию об абонементе
     LoadClientInfo(FClientID);
 
-    // ========== ШАГ 4: ПРОВЕРЯЕМ АКТИВНОЕ ПОСЕЩЕНИЕ ==========
 
-    // Вызываем метод из DBModule, который проверяет, есть ли незавершенное посещение
     if DB.HasActiveVisit(FClientID) then
     begin
-      // ========== РЕЖИМ ВЫХОДА (клиент уже внутри) ==========
 
 
 
-      FMode := modeExit;  // Устанавливаем режим "Выход"
 
-      // Настраиваем кнопки
-      btnEntry.Enabled := False;        // Вход недоступен
+      FMode := modeExit;
+
+
+      btnEntry.Enabled := False;
       btnEntry.Caption := 'Вход (недоступен)';
 
-      btnExit.Enabled := True;          // Выход доступен
+      btnExit.Enabled := True;
       btnExit.Caption := 'ЗАВЕРШИТЬ ПОСЕЩЕНИЕ';
 
-      // Блокируем поля ввода (нельзя менять данные во время тренировки)
-      cbClient.Enabled := False;        // Нельзя сменить клиента
-      cbTrainer.Enabled := False;       // Нельзя сменить тренера
-      memoNotes.ReadOnly := True;       // Нельзя менять заметки
 
-      // ========== ШАГ 5: НАХОДИМ ID АКТИВНОГО ПОСЕЩЕНИЯ ==========
+      cbClient.Enabled := False;
+      cbTrainer.Enabled := False;
+      memoNotes.ReadOnly := True;
+
+
 
       var Query := TFDQuery.Create(nil);
       try
@@ -116,7 +110,7 @@ begin
         if not Query.Eof then
         begin
           FVisitID := Query.FieldByName('id').AsInteger;
-//          ShowMessage('Найдено активное посещение ID=' + IntToStr(FVisitID));
+//
         end;
       finally
         Query.Free;
@@ -124,45 +118,45 @@ begin
     end
     else
     begin
-      // ========== РЕЖИМ ВХОДА (новое посещение) ==========
 
 
 
-      FMode := modeEntry;    // Устанавливаем режим "Вход"
-      FVisitID := 0;         // Обнуляем ID посещения
 
-      // Настраиваем кнопки
-      btnEntry.Enabled := True;         // Вход доступен
+      FMode := modeEntry;
+      FVisitID := 0;
+
+
+      btnEntry.Enabled := True;
       btnEntry.Caption := 'ВХОД';
 
-      btnExit.Enabled := False;         // Выход недоступен
+      btnExit.Enabled := False;
       btnExit.Caption := 'Выход';
 
-      // Разблокируем поля ввода
-      cbClient.Enabled := True;         // Можно сменить клиента
-      cbTrainer.Enabled := True;        // Можно выбрать тренера
-      memoNotes.ReadOnly := False;      // Можно писать заметки
+
+      cbClient.Enabled := True;
+      cbTrainer.Enabled := True;
+      memoNotes.ReadOnly := False;
     end;
   end
   else
   begin
-    // ========== НИЧЕГО НЕ ВЫБРАНО ==========
+
 
     FClientID := 0;
     FVisitID := 0;
 
-    // Очищаем поля
+
     edtPhone.Text := '';
     edtSubscription.Text := '';
 
-    // Сбрасываем режим на вход
+
     FMode := modeEntry;
     btnEntry.Enabled := True;
     btnEntry.Caption := 'Вход';
     btnExit.Enabled := False;
     btnExit.Caption := 'Выход';
 
-    // Разблокируем всё
+
     cbClient.Enabled := True;
     cbTrainer.Enabled := True;
     memoNotes.ReadOnly := False;
@@ -245,47 +239,46 @@ var
   ClientID: Integer;
   ClientName: string;
 begin
-  // Очищаем ComboBox
+
   cbClient.Clear;
 
-  // Проверяем подключение к БД
+
   if not DB.IsConnected then
   begin
     ShowMessage('Сначала подключитесь к базе данных!');
     Exit;
   end;
 
-  // Создаем запрос
+
   Query := TFDQuery.Create(nil);
   try
     Query.Connection := DB.GetConnection;
 
-    // Загружаем только активных клиентов
+
     Query.SQL.Text :=
       'SELECT id, full_name FROM clients ' +
       'WHERE is_active = 1 ' +
       'ORDER BY full_name';
     Query.Open;
 
-    // Пока есть записи
+
     while not Query.Eof do
     begin
-      // Получаем данные из текущей записи
+
       ClientID := Query.FieldByName('id').AsInteger;
       ClientName := Query.FieldByName('full_name').AsString;
 
-      // ВАЖНО: Добавляем в ComboBox строку + привязываем ID через Objects
-      // TObject(ClientID) - это "хитрость" для хранения числа в Object
+
       cbClient.Items.AddObject(ClientName, TObject(ClientID));
 
-      Query.Next;  // Переходим к следующей записи
+      Query.Next;
     end;
 
   finally
-    Query.Free;  // Освобождаем запрос
+    Query.Free;
   end;
 
-  // Если есть элементы, выбираем первый
+
   if cbClient.Items.Count > 0 then
     cbClient.ItemIndex := 0;
 end;
@@ -298,14 +291,14 @@ var
   TrainerName: string;
   Notes: string;
 begin
-  // Дополнительная проверка - если мы в режиме выхода, кнопка должна быть неактивна
+
   if FMode = modeExit then
   begin
     ShowMessage('Сначала завершите текущее посещение!');
     Exit;
   end;
 
-  // Проверка выбора клиента
+
   if cbClient.ItemIndex < 0 then
   begin
     ShowMessage('Выберите клиента!');
@@ -313,7 +306,7 @@ begin
     Exit;
   end;
 
-  // Проверка выбора тренера
+
   if cbTrainer.ItemIndex < 0 then
   begin
     ShowMessage('Выберите тренера!');
@@ -321,27 +314,27 @@ begin
     Exit;
   end;
 
-  // ПОСЛЕДНЯЯ ПРОВЕРКА - вдруг кто-то создал посещение параллельно
+
   if DB.HasActiveVisit(FClientID) then
   begin
     ShowMessage('У клиента уже есть активное посещение!' + sLineBreak +
                 'Завершите его через кнопку "Выход"');
-    // Обновим интерфейс
-    cbClientChange(nil); // Перезагрузим состояние клиента
+
+    cbClientChange(nil);
     Exit;
   end;
 
-  // Получаем ID клиента
+
   FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
 
-  // Подготавливаем данные
+
   VisitDate := Date;
   EntryTime := Time;
   ExitTime := 0;
   TrainerName := cbTrainer.Text;
   Notes := memoNotes.Text;
 
-  // Сохраняем в БД
+
   try
     FVisitID := DB.AddVisit(
       FClientID,
@@ -357,10 +350,10 @@ begin
       FEntryTime := EntryTime;
       FIsEntryRegistered := True;
 
-      // Переключаем в режим выхода
+
       FMode := modeExit;
 
-      // Меняем интерфейс
+
       btnEntry.Enabled := False;
       btnEntry.Caption := 'Вход (недоступен)';
       btnExit.Enabled := True;
@@ -402,29 +395,29 @@ var
   EntryTimeStr: string;
   UserResponse: Integer;
 begin
-  // СНАЧАЛА проверяем выбран ли клиент
+
   if cbClient.ItemIndex < 0 then
   begin
     ShowMessage('Выберите клиента!');
     Exit;
   end;
 
-  // ПОТОМ получаем ID клиента
+
   FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex]);
 
-  // ПОТОМ получаем текущее время выхода
-  ExitTime := Time;  // ЭТО БЫЛО ПРОПУЩЕНО!
 
-  // Ищем активное посещение
+  ExitTime := Time;
+
+
   Query := TFDQuery.Create(nil);
   try
     Query.Connection := DB.GetConnection;
     Query.SQL.Text :=
       'SELECT id, entry_time FROM visits ' +
-      'WHERE client_id = :client_id ' +  // Используем параметры!
+      'WHERE client_id = :client_id ' +
       ' AND (exit_time IS NULL OR exit_time = '''')';
 
-    Query.ParamByName('client_id').AsInteger := FClientID;  // Правильно через параметры
+    Query.ParamByName('client_id').AsInteger := FClientID;
     Query.Open;
 
     if Query.Eof then
@@ -433,10 +426,10 @@ begin
       Exit;
     end;
 
-    // Нашли активное посещение
+
     ActiveVisitID := Query.FieldByName('id').AsInteger;
 
-    // Время входа нужно преобразовать правильно
+
     EntryTimeStr := Query.FieldByName('entry_time').AsString;
     try
       EntryTime := StrToTime(EntryTimeStr);
@@ -447,7 +440,7 @@ begin
 
     Query.Close;
 
-    // Проверяем корректность времени
+
     if ExitTime < EntryTime then
     begin
      UserResponse := MessageDlg(
@@ -461,14 +454,14 @@ begin
         mtConfirmation, [mbYes, mbNo], 0);
        if UserResponse = mrYes then
       begin
-        // Добавляем 24 часа к времени выхода (1 день = 1.0 в Delphi)
+
         ExitTime := ExitTime + 1.0;
       end
       else
-        Exit;  // Пользователь отменил операцию
+        Exit;
     end;
 
-    // Вычисляем длительность
+
     DurationMinutes := Round((ExitTime - EntryTime) * 24 * 60);
 
     if DurationMinutes > 720 then
@@ -484,7 +477,7 @@ begin
           Exit;
     end;
 
-    // Обновляем запись
+
     Query.SQL.Text :=
       'UPDATE visits SET exit_time = :exit_time, ' +
       'duration_minutes = :duration ' +
@@ -492,10 +485,10 @@ begin
 
     Query.ParamByName('exit_time').AsString := FormatDateTime('hh:nn:ss', ExitTime);
     Query.ParamByName('duration').AsInteger := DurationMinutes;
-    Query.ParamByName('id').AsInteger := ActiveVisitID;  // Используем ActiveVisitID, не VisitID!
+    Query.ParamByName('id').AsInteger := ActiveVisitID;
     Query.ExecSQL;
 
-    // Показываем результат
+
     ShowMessage(
       '✅ Посещение завершено!' + sLineBreak +
       'ID: ' + IntToStr(ActiveVisitID) + sLineBreak +
@@ -504,7 +497,7 @@ begin
       'Длительность: ' + IntToStr(DurationMinutes) + ' минут'
     );
 
-    // Закрываем форму
+
     ModalResult := mrOk;
 
   finally
@@ -514,7 +507,7 @@ end;
 
 procedure TfrmVisitEdit1.btnCancelClick(Sender: TObject);
 begin
-  // Если мы в режиме выхода, спросим подтверждение
+
   if FMode = modeExit then
   begin
     if MessageDlg('Посещение еще не завершено. Все равно закрыть?',
@@ -525,7 +518,7 @@ begin
   end
   else
   begin
-    // Просто закрываем
+
     ModalResult := mrCancel;
   end;
 end;

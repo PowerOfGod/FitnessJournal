@@ -31,4 +31,4 @@ begin
   end;
 end;
 
-end.иже
+end.

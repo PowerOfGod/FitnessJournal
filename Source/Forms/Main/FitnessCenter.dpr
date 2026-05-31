@@ -3,16 +3,16 @@
 uses
   Vcl.Forms,
   AppConsts in '..\..\Core\AppConsts.pas',
-  frmClientEdit in '..\Clients\frmClientEdit.pas' {frmClientEdit1},
-  frmVisitEdit in '..\Visits\frmVisitEdit.pas' {frmVisitEdit1},
-  frmSubscriptionEdit in '..\Subscriptions\frmSubscriptionEdit.pas' {frmSubscriptionEdit1},
+  frmClientEdit in '..\Clients\frmClientEdit.pas',
+  frmVisitEdit in '..\Visits\frmVisitEdit.pas',
+  frmSubscriptionEdit in '..\Subscriptions\frmSubscriptionEdit.pas',
   DBModule in '..\..\Database\DBModule.pas',
-  frmMain in 'frmMain.pas' {formMain},
+  frmMain in 'frmMain.pas',
   Vcl.Themes,
   Vcl.Styles,
-  frameStatistics in '..\statistics\frameStatistics.pas' {Frame1: TFrame},
+  frameStatistics in '..\statistics\frameStatistics.pas' ,
   uUIStyles in '..\..\Core\uUIStyles.pas',
-  frmSplash in 'frmSplash.pas' {Form1};
+  frmSplash in 'frmSplash.pas';
 
 {$R *.res}
 
@@ -20,7 +20,7 @@ begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
 
-   with TForm1.Create(Application) do  // ← TForm1 - имя вашей формы
+   with TForm1.Create(Application) do
   try
     ShowModal;
   finally

@@ -181,7 +181,7 @@ var
   SubscriptionVisits: Integer;
   SubscriptionRemaining: Integer;
 begin
-  // ВАЛИДАЦИЯ ДАННЫХ
+
   FullName := Trim(Edit1.Text);
   if FullName = '' then
   begin
@@ -217,7 +217,7 @@ begin
     Exit;
   end;
 
-  // СБОР ДАННЫХ
+
   Email := Trim(Edit3.Text);
   MembershipType := ComboBox1.Text;
   BirthDate := DateTimePicker1.Date;
@@ -230,33 +230,33 @@ begin
       Exit;
     end;
 
-    // ЕСЛИ ВЫБРАН АБОНЕМЕНТ, ПОКАЗЫВАЕМ ПОДТВЕРЖДЕНИЕ
+
     if MembershipType <> 'Без абонемента' then
     begin
-      // Определяем параметры абонемента
+
       case ComboBox1.ItemIndex of
-        1: // Разовый
+        1:
         begin
           SubscriptionPrice := 500;
           SubscriptionVisits := 1;
           SubscriptionRemaining := 1;
-          SubscriptionEndDate := Date + 1; // на 1 день
+          SubscriptionEndDate := Date + 1;
         end;
-        2: // Месячный
+        2:
         begin
           SubscriptionPrice := 3000;
-          SubscriptionVisits := 0; // 0 = безлимит
+          SubscriptionVisits := 0;
           SubscriptionRemaining := 0;
           SubscriptionEndDate := Date + 30;
         end;
-        3: // Квартальный
+        3:
         begin
           SubscriptionPrice := 8000;
           SubscriptionVisits := 0;
           SubscriptionRemaining := 0;
           SubscriptionEndDate := Date + 90;
         end;
-        4: // Годовой
+        4:
         begin
           SubscriptionPrice := 25000;
           SubscriptionVisits := 0;
@@ -267,7 +267,7 @@ begin
         Exit;
       end;
 
-      // ПОКАЗЫВАЕМ МОДАЛЬНОЕ ОКНО С ИНФОРМАЦИЕЙ
+
       var Msg := '⚠ ПОДТВЕРЖДЕНИЕ АБОНЕМЕНТА ⚠' + sLineBreak + sLineBreak +
                  'Клиент: ' + FullName + sLineBreak +
                  'Абонемент: ' + MembershipType + sLineBreak +
@@ -282,14 +282,14 @@ begin
       if MessageDlg(Msg, mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
       begin
         ShowMessage('Абонемент не будет добавлен');
-        MembershipType := 'Без абонемента'; // Сбрасываем выбор
+        MembershipType := 'Без абонемента';
       end;
     end;
 
-    // ПРОВЕРЯЕМ РЕЖИМ РАБОТЫ
+
     if FIsEditMode and (FClientID > 0) then
     begin
-      // РЕЖИМ РЕДАКТИРОВАНИЯ - обновляем существующего клиента
+
       Success := DB.UpdateClient(
         FClientID,
         FullName,
@@ -309,7 +309,7 @@ begin
     end
     else
     begin
-      // РЕЖИМ ДОБАВЛЕНИЯ - создаем нового клиента
+
       NewClientID := DB.AddClient(
         FullName,
         Email,
@@ -324,13 +324,13 @@ begin
       begin
         FClientID := NewClientID;
 
-        // ЕСЛИ НУЖНО ДОБАВИТЬ АБОНЕМЕНТ
+
         if (MembershipType <> 'Без абонемента') and (ComboBox1.ItemIndex > 0) then
         begin
           var SubID := DB.AddSubscription(
             NewClientID,
             MembershipType,
-            Date, // start_date
+            Date,
             SubscriptionEndDate,
             SubscriptionPrice,
             SubscriptionVisits,
@@ -362,38 +362,37 @@ end;
 
 procedure TfrmClientEdit1.btnCancelClick(Sender: TObject);
 begin
-  // Спрашиваем подтверждение
+
   if MessageDlg('Отменить ввод данных?', mtConfirmation, [mbYes, mbNo], 0) = mrYes then
   begin
-    ClearForm;  // Очищаем форму
-    ModalResult := mrCancel;  // Закрываем с отменой
+    ClearForm;
+    ModalResult := mrCancel;
   end;
 end;
 
-// В FormCreate инициализировать значения
+
 
 procedure TfrmClientEdit1.FormCreate(Sender: TObject);
 begin
-//  ShowMessage('FormCreate: IsEditMode=' + BoolToStr(FIsEditMode, True) +
-//              ', ClientID=' + IntToStr(FClientID));
 
-  // Инициализация переменных
+
+
   FIsEditMode := False;
   FClientID := 0;
 
-  // Устанавливаем текущую дату
+
   DateTimePicker1.Date := Now;
 
-  // Заполняем ComboBox с типами членства
+
   ComboBox1.Clear;
-  ComboBox1.Items.Add('Без абонемента');  // Добавляем пустой вариант
+  ComboBox1.Items.Add('Без абонемента');
   ComboBox1.Items.Add('Разовый');
   ComboBox1.Items.Add('Месячный');
   ComboBox1.Items.Add('Квартальный');
   ComboBox1.Items.Add('Годовой');
   ComboBox1.ItemIndex := 0;
 
-  // ЕСЛИ ЭТО РЕЖИМ РЕДАКТИРОВАНИЯ - ЗАГРУЖАЕМ ДАННЫЕ
+
   if FIsEditMode and (FClientID > 0) then
     LoadClientData(FClientID)
   else
@@ -402,7 +401,7 @@ end;
 
 procedure TfrmClientEdit1.ClearForm;
 begin
-  // Очищаем все поля ввода
+
   Edit1.Text := '';
   Edit2.Text := '';
   Edit3.Text := '';
@@ -421,7 +420,7 @@ begin
   try
     Query.Connection := DB.GetConnection;
 
-    // Читаем данные клиента из БД
+
     Query.SQL.Text :=
       'SELECT full_name, phone, email, birth_date, membership_type ' +
       'FROM clients WHERE id = :id';
@@ -430,13 +429,13 @@ begin
 
     if not Query.Eof then
     begin
-      // Заполняем поля формы
+
       Edit1.Text := Query.FieldByName('full_name').AsString;
       Edit2.Text := Query.FieldByName('phone').AsString;
       Edit3.Text := Query.FieldByName('email').AsString;
       DateTimePicker1.Date := Query.FieldByName('birth_date').AsDateTime;
 
-      // Устанавливаем тип членства в ComboBox
+
       var MembershipType := Query.FieldByName('membership_type').AsString;
       for var i := 0 to ComboBox1.Items.Count - 1 do
         if ComboBox1.Items[i] = MembershipType then

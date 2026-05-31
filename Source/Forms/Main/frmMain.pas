@@ -55,19 +55,16 @@ type
     procedure RegisterVisitExit(VisitID: Integer);
     procedure btnNewClientClick(Sender: TObject);
     procedure btnNewVisitClick(Sender: TObject);
-    procedure btnNewSubscriptionClick(Sender: TObject); // ДОБАВИТЬ эту строку
-    procedure FormDestroy(Sender: TObject); // ДОБАВИТЬ эту строку
+    procedure btnNewSubscriptionClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure LoadClients;
     procedure LoadSubscription;
     procedure LoadVisits;
     procedure btnRefreshClick(Sender: TObject);
-    procedure EditClient(ClientID: Integer); // Новый метод
+    procedure EditClient(ClientID: Integer);
     procedure DeleteClient(ClientID: Integer);
     procedure SoftDeleteClient(ClientID: Integer; ClientName: String);
     procedure HardDeleteClient(ClientID: Integer; ClientName: String);
-    /// /    procedure LoadSubscriptions;
-    /// /    procedure LoadVisits;
     procedure mnTrainerReportClick(Sender: TObject);
     procedure mnVisitsReportClick(Sender: TObject);
     procedure mnSubscriptionsReportClick(Sender: TObject);
@@ -112,14 +109,14 @@ implementation
 
 procedure TformMain.N2Click(Sender: TObject);
 begin
-  Close;  // Закрыть приложение
+  Close;
 end;
 
 procedure TformMain.UpdateStatisticsLayout;
 begin
   if Assigned(FStatsFrame) then
   begin
-    // Принудительно пересчитываем размеры таблиц в статистике
+
     FStatsFrame.UpdateLayout;
   end;
 end;
@@ -135,7 +132,7 @@ begin
   if not Grid.DataSource.DataSet.Active then Exit;
   if Grid.Columns.Count = 0 then Exit;
 
-  // Подсчитываем только видимые колонки
+
   VisibleCols := 0;
   for i := 0 to Grid.Columns.Count - 1 do
     if Grid.Columns[i].Visible then
@@ -143,19 +140,19 @@ begin
 
   if VisibleCols = 0 then Exit;
 
-  // Получаем доступную ширину (минус полоса прокрутки и отступы)
+
   TotalWidth := Grid.ClientWidth - 25;
 
   if TotalWidth < 100 then Exit;
 
-  // Равномерно распределяем ширину между всеми видимыми колонками
+
   ColWidth := TotalWidth div VisibleCols;
 
-  // Минимальная ширина колонки
+
   if ColWidth < 60 then
     ColWidth := 60;
 
-  // Применяем ширину ко всем видимым колонкам
+
   for i := 0 to Grid.Columns.Count - 1 do
     if Grid.Columns[i].Visible then
       Grid.Columns[i].Width := ColWidth;
@@ -165,7 +162,7 @@ end;
 
  procedure TformMain.FormResize(Sender: TObject);
 begin
-  // Подстраиваем активную таблицу главной формы
+
   if PageControl1.ActivePage = tsClients then
     AutoFitGridColumns(DBGridClients)
   else if PageControl1.ActivePage = tsSubscription then
@@ -173,7 +170,7 @@ begin
   else if PageControl1.ActivePage = tsVisits then
     AutoFitGridColumns(DBGridVisits)
   else if PageControl1.ActivePage = tsStatistics then
-    UpdateStatisticsLayout;  // ← ВЫЗЫВАЕМ ДЛЯ СТАТИСТИКИ
+    UpdateStatisticsLayout;
 end;
 
 
@@ -182,7 +179,7 @@ var
   ClientForm: TfrmClientEdit1;
   Query: TFDQuery;
 begin
-//  ShowMessage('Редактирование клиента с ID: ' + IntToStr(ClientID));
+
   if not DB.IsConnected then
   begin
     ShowMessage('Нет подключенияя к базе данных!');
@@ -281,11 +278,11 @@ begin
 
     case Res of
       mrYes:
-        SoftDeleteClient(ClientID, ClientName); // Мягкое удаление
+        SoftDeleteClient(ClientID, ClientName);
       mrNo:
-        HardDeleteClient(ClientID, ClientName); // Полное удаление
+        HardDeleteClient(ClientID, ClientName);
       mrCancel:
-        ShowMessage('Удаление отменено.'); // Отмена
+        ShowMessage('Удаление отменено.');
     end;
 
   finally
@@ -303,22 +300,22 @@ begin
   try
     Query.Connection := DB.GetConnection;
 
-    // Начинаем транзакцию
+
     Query.Connection.StartTransaction;
 
     try
-      // 1. Деактивируем клиента
+
       Query.SQL.Text := 'UPDATE clients SET is_active = 0 ' + 'WHERE id = :id';
       Query.ParamByName('id').AsInteger := ClientID;
       Query.ExecSQL;
 
-      // 2. Деактивируем все активные абонементы
+
       Query.SQL.Text := 'UPDATE subscriptions SET is_active = 0 ' +
         'WHERE client_id = :id AND is_active = 1';
       Query.ParamByName('id').AsInteger := ClientID;
       Query.ExecSQL;
 
-      // Фиксируем транзакцию
+
       Query.Connection.Commit;
 
       ShowMessage('✅ Клиент успешно деактивирован!' + sLineBreak + sLineBreak +
@@ -327,7 +324,7 @@ begin
         '▪ Абонементы: деактивированы' + sLineBreak +
         '▪ История посещений: сохранена');
 
-      // Обновляем список клиентов (показываем только активных)
+
       LoadClients;
 
     except
@@ -348,12 +345,12 @@ var
   Query: TFDQuery;
   VisitCount, SubCount: Integer;
 begin
-  // Дополнительное подтверждение с подсчетом записей
+
   Query := TFDQuery.Create(nil);
   try
     Query.Connection := DB.GetConnection;
 
-    // Получаем количество связанных записей
+
     Query.SQL.Text := 'SELECT ' +
       '(SELECT COUNT(*) FROM visits WHERE client_id = :id) as visits, ' +
       '(SELECT COUNT(*) FROM subscriptions WHERE client_id = :id) as subs';
@@ -364,7 +361,7 @@ begin
     SubCount := Query.FieldByName('subs').AsInteger;
     Query.Close;
 
-    // Финальное подтверждение
+
     if MessageDlg('⚠ ПОЛНОЕ УДАЛЕНИЕ ⚠' + sLineBreak + sLineBreak + 'Клиент: ' +
       ClientName + sLineBreak + 'ID: ' + IntToStr(ClientID) + sLineBreak +
       sLineBreak + 'Будет удалено:' + sLineBreak + '• Посещений: ' +
@@ -377,7 +374,7 @@ begin
       Exit;
     end;
 
-    // Запрос подтверждения строкой
+
     var
     ConfirmText := InputBox('Подтверждение удаления',
       'Введите "DELETE" для подтверждения:', '');
@@ -392,24 +389,24 @@ begin
     Query.Free;
   end;
 
-  // САМО УДАЛЕНИЕ (в отдельной транзакции)
+
   Query := TFDQuery.Create(nil);
   try
     Query.Connection := DB.GetConnection;
     Query.Connection.StartTransaction;
 
     try
-      // Удаляем посещения
+
       Query.SQL.Text := 'DELETE FROM visits WHERE client_id = :id';
       Query.ParamByName('id').AsInteger := ClientID;
       Query.ExecSQL;
 
-      // Удаляем абонементы
+
       Query.SQL.Text := 'DELETE FROM subscriptions WHERE client_id = :id';
       Query.ParamByName('id').AsInteger := ClientID;
       Query.ExecSQL;
 
-      // Удаляем клиента
+
       Query.SQL.Text := 'DELETE FROM clients WHERE id = :id';
       Query.ParamByName('id').AsInteger := ClientID;
       Query.ExecSQL;
@@ -437,7 +434,7 @@ end;
 
 procedure TformMain.FormCreate(Sender: TObject);
 begin
-  // 1. Путь к БД рядом с exe
+
   FDBPath := GetDBPath;
   Color := clWhite;
     DBGridClients.Font.Size := 11;
@@ -452,7 +449,7 @@ begin
 
   DBGridVisits.Font.Size := 11;
   DBGridVisits.TitleFont.Size := 11;
-  // 2. Проверка файла
+
   if not FileExists(FDBPath) then
   begin
     ShowMessage('Файл базы данных не найден:' + sLineBreak + FDBPath +
@@ -465,7 +462,7 @@ begin
 
   end;
 
-  // 3. Подключаемся
+
   try
     if DB.ConnectToDB(FDBPath) then
     begin
@@ -476,7 +473,7 @@ begin
       LoadVisits;
       LoadStatistics;
 
-      // ========== СОЗДАЕМ ФРЕЙМ СТАТИСТИКИ ==========
+
       if tsStatistics.ControlCount = 0 then
       begin
         FStatsFrame := TFrame1.Create(tsStatistics);
@@ -490,7 +487,7 @@ begin
       ShowMessage(E.Message);
   end;
 
-  // ========== ПРИМЕНЯЕМ СТИЛИ (ВНЕ БЛОКА try..except) ==========
+
   try
     
      TUIStyles.FormatDates(FDQueryClients, ['birth_date', 'registration_date']);
@@ -509,11 +506,11 @@ begin
   tsStatistics.Caption := 'Статистика';
   tsVisits.Caption := 'Посещения';
 
-  // Привязываем обработчики
+
   PageControl1.OnChange := PageControl1Change;
   btnRefresh.OnClick := btnRefreshClick;
 
-  // Статус по умолчанию
+
   if not DB.IsConnected then
   begin
     StatusBar1.Panels[0].Text := 'Готов';
@@ -525,7 +522,7 @@ begin
 
    UpdateStatusBar;
 
-     SetupToolbarButtons;     // Настраиваем кнопки
+     SetupToolbarButtons;
   Self.KeyPreview := True;
   Self.OnKeyDown := FormKeyDown;
 
@@ -566,7 +563,7 @@ begin
     FDQuerySubscriptions.Close;
     FDQuerySubscriptions.Connection := DB.GetConnection;
 
-    // ПОКАЗЫВАЕМ ВСЕ АБОНЕМЕНТЫ С ПРАВИЛЬНЫМ СТАТУСОМ
+
     FDQuerySubscriptions.SQL.Text := 'SELECT ' + 's.id, ' + 's.client_id, ' +
       'CAST(c.full_name AS VARCHAR(100)) AS client_name, ' +
       'CAST(s.subscription_type AS VARCHAR(100)) AS subscription_type, ' +
@@ -576,7 +573,7 @@ begin
       + '     WHEN s.is_active = 1 AND date(s.end_date) < date(''now'') THEN "Просрочен" '
       + '     ELSE "Неактивен" END as status, ' +
       'CASE WHEN s.is_active = 1 AND date(s.end_date) >= date(''now'') THEN 1 '
-      + // Для сортировки
+      +
       '     WHEN s.is_active = 1 AND date(s.end_date) < date(''now'') THEN 2 ' +
       '     ELSE 3 END as status_order, ' +
       'CAST(s.notes AS VARCHAR(100)) AS notes ' + 'FROM subscriptions s ' +
@@ -586,10 +583,10 @@ begin
     FDQuerySubscriptions.Open;
      if DBGridSubscriptions.Columns.Count > 0 then
   begin
-    DBGridSubscriptions.Columns[0].Visible := False;  // ID
+    DBGridSubscriptions.Columns[0].Visible := False;
     DBGridSubscriptions.Columns[1].Visible := False;
     DBGridSubscriptions.Columns[10].Visible := False;
-    DBGridSubscriptions.Columns[11].Visible := False;  // client_id
+    DBGridSubscriptions.Columns[11].Visible := False;
 
 
     DBGridSubscriptions.Columns[2].Title.Caption := 'Клиент';
@@ -601,25 +598,25 @@ begin
     DBGridSubscriptions.Columns[8].Title.Caption := 'Осталось';
     DBGridSubscriptions.Columns[9].Title.Caption := 'Статус';
 
-    // Увеличиваем нужные колонки
-    DBGridSubscriptions.Columns[2].Width := 200;  // client_name - увеличили
+
+    DBGridSubscriptions.Columns[2].Width := 200;
     DBGridSubscriptions.Columns[3].Width := 125;
      DBGridSubscriptions.Columns[7].Width := 50;
-      DBGridSubscriptions.Columns[8].Width := 50;  // subscription_type
+      DBGridSubscriptions.Columns[8].Width := 50;
     DBGridSubscriptions.Columns[9].Width := 120;
     DBGridSubscriptions.Columns[10].Width := 25;
-    DBGridSubscriptions.Columns[11].Width := 120;   // status
+    DBGridSubscriptions.Columns[11].Width := 120;
   end;
 
 
 
-    // Настройка ширины колонок
+
     FDQuerySubscriptions.FieldByName('client_name').DisplayWidth := 25;
     FDQuerySubscriptions.FieldByName('subscription_type').DisplayWidth := 15;
     FDQuerySubscriptions.FieldByName('status').DisplayWidth := 12;
     FDQuerySubscriptions.FieldByName('notes').DisplayWidth := 25;
 
-    // Подсчет статистики
+
     var
     ActiveCount := 0;
     var
@@ -680,9 +677,9 @@ begin
 
      if DBGridVisits.Columns.Count > 0 then
   begin
-    DBGridVisits.Columns[0].Visible := False;  // ID
+    DBGridVisits.Columns[0].Visible := False;
     DBGridVisits.Columns[1].Visible := False;
-    DBGridVisits.Columns[8].Visible := False; // client_id
+    DBGridVisits.Columns[8].Visible := False;
     DBGridVisits.Columns[6].Alignment := taLeftJustify;
 
     DBGridVisits.Columns[2].Title.Caption := 'Клиент';
@@ -693,9 +690,9 @@ begin
     DBGridVisits.Columns[7].Title.Caption := 'Тренер';
 
 
-    // Увеличиваем нужные колонки
-    DBGridVisits.Columns[2].Width := 250;  // full_name - увеличили
-    DBGridVisits.Columns[7].Width := 200;  // trainer_name - увеличили
+
+    DBGridVisits.Columns[2].Width := 250;
+    DBGridVisits.Columns[7].Width := 200;
   end;
 
 
@@ -725,25 +722,25 @@ begin
 
   try
 
-    // 1. Закрываем запрос
+
     FDQueryClients.Close;
 
 
 
-    // 2. Проверяем и устанавливаем подключение
+
     if not Assigned(FDQueryClients.Connection) then
       FDQueryClients.Connection := DB.GetConnection;
 
-    // 3. Ваш SQL с CAST (оставляем как есть)
+
     FDQueryClients.SQL.Text := 'SELECT ' + 'id, ' +
       'CAST(full_name AS VARCHAR(100)) AS full_name, ' +
       'CAST(phone AS VARCHAR(30)) AS phone, ' +
       'CAST(email AS VARCHAR(100)) AS email, ' +
       'CAST(membership_type AS VARCHAR(50)) AS membership_type, ' + 'is_active '
-      + 'FROM clients ' + 'WHERE is_active = 1 ' + // ← ДОБАВИТЬ ЭТУ СТРОКУ!
+      + 'FROM clients ' + 'WHERE is_active = 1 ' +
       'ORDER BY full_name';
 
-    // 4. Открываем запрос
+
     FDQueryClients.Open;
 
 
@@ -760,11 +757,11 @@ begin
     DBGridClients.Columns[3].Title.Caption := 'Email';
     DBGridClients.Columns[4].Title.Caption := 'Абонемент';
 
-    DBGridClients.Columns[0].Width := 50;    // ID
-    DBGridClients.Columns[1].Width := 200;   // ФИО
-    DBGridClients.Columns[2].Width := 120;   // Телефон
-    DBGridClients.Columns[3].Width := 180;   // Email
-    DBGridClients.Columns[4].Width := 130;   // Тип абонемента
+    DBGridClients.Columns[0].Width := 50;
+    DBGridClients.Columns[1].Width := 200;
+    DBGridClients.Columns[2].Width := 120;
+    DBGridClients.Columns[3].Width := 180;
+    DBGridClients.Columns[4].Width := 130;
 
      AutoFitGridColumns(DBGridClients);
   end;
@@ -775,17 +772,17 @@ begin
 
     ApplySearchFilter;
 
-    // 5. Настройка ширины колонок
+
     FDQueryClients.FieldByName('full_name').DisplayWidth := 25;
     FDQueryClients.FieldByName('phone').DisplayWidth := 15;
     FDQueryClients.FieldByName('email').DisplayWidth := 30;
     FDQueryClients.FieldByName('membership_type').DisplayWidth := 20;
 
-    // 6. Принудительное обновление DBGrid
+
     DBGridClients.Refresh;
     DBGridClients.Repaint;
 
-    // 7. Обновляем статус
+
     StatusBar1.Panels[1].Text := 'Клиентов: ' +
       IntToStr(FDQueryClients.RecordCount);
 
@@ -819,13 +816,13 @@ begin
         StatusBar1.Panels[1].Text := 'Абонементы: ' +
           IntToStr(FDQuerySubscriptions.RecordCount);
       end;
-    2: // <-- ЭТО ВКЛАДКА СТАТИСТИКИ (индекс 2)
+    2:
       begin
          StatusBar1.Panels[0].Text := 'Статистика';
         if Assigned(FStatsFrame) then
         begin
           FStatsFrame.RefreshData;
-          UpdateStatisticsLayout;  // ← ДОБАВИТЬ
+          UpdateStatisticsLayout;
         end;
       end;
     3:
@@ -845,10 +842,7 @@ begin
     AutoFitGridColumns(DBGridVisits);
 end;
 
-procedure TformMain.FormDestroy(Sender: TObject);
-begin
-  // Не нужно освобождать DB - это сделает finalization
-end;
+
 
 procedure TformMain.btnNewClientClick(Sender: TObject);
 var
@@ -865,15 +859,10 @@ begin
 
     ClientForm.Caption := 'Добавить нового клиента';
 
-    // Просто показываем форму
-    // Форма сама сохраняет данные
+
     if ClientForm.ShowModal = mrOk then
     begin
-      // Клиент уже сохранен формой
-      // Просто обновляем список
 
-
-      // Можно показать ID сохраненного клиента
       ShowMessage('Клиент добавлен! ID: ' + IntToStr(ClientForm.ClientID));
        LoadClients;
        PageControl1.ActivePageIndex := 0;
@@ -942,13 +931,18 @@ begin
     0:
       LoadClients;
     1:
-      LoadSubscription; // Обновляем список абонементов
+      LoadSubscription;
     3:
       LoadVisits;
   end;
 end;
 
 procedure TformMain.DBGridClientsDblClick(Sender: TObject);
+var
+  ClientID: Integer;
+  ClientName: string;
+  Res: Integer;
+  dlg: TForm;
 begin
   if FDQueryClients.IsEmpty then
   begin
@@ -956,16 +950,16 @@ begin
     Exit;
   end;
 
-  var
-  ClientID := FDQueryClients.FieldByName('id').AsInteger;
-  var
-  ClientName := FDQueryClients.FieldByName('full_name').AsString;
-  var
-  this := Self;
+   ClientID := FDQueryClients.FieldByName('id').AsInteger;
+    ClientName := FDQueryClients.FieldByName('full_name').AsString;
 
-  var
-  Res := MessageDlg('Выберите действие для клиента:' + sLineBreak + '«' +
-    ClientName + '»', mtConfirmation, [mbYes, mbNo, mbCancel], 0);
+dlg := CreateMessageDialog('Выберите действие для клиента:' + sLineBreak + '«' +
+    ClientName + '»', mtConfirmation, [mbYes, mbNo, mbCancel]);
+  TButton(dlg.FindComponent('Yes')).Caption := 'Ред.';
+  TButton(dlg.FindComponent('No')).Caption := 'Удалить';
+  TButton(dlg.FindComponent('Cancel')).Caption := 'Отмена';
+  Res := dlg.ShowModal;
+  dlg.Free;
 
   case Res of
     mrYes:
@@ -980,7 +974,7 @@ begin
        LoadClients;
     end;
     mrCancel:
-      ; // Ничего не делать
+      ;
   end;
 end;
 
@@ -1009,7 +1003,6 @@ begin
     if Response = mrYes then
     begin
       RegisterVisitExit(VisitID)
-      /// Тут функция  ///
     end;
 
   end
@@ -1042,7 +1035,7 @@ begin
     try
       Query.Connection := DB.GetConnection;
 
-      // 1. Получаем время входа
+
       Query.SQL.Text := 'SELECT entry_time FROM visits WHERE id = :id';
       Query.ParamByName('id').AsInteger := VisitID;
       Query.Open;
@@ -1056,32 +1049,30 @@ begin
       EntryTimeStr := Query.FieldByName('entry_time').AsString;
       Query.Close;
 
-      // 2. Преобразуем строку в TTime
+
       try
         EntryTime := StrToTime(EntryTimeStr);
       except
-        // Если не удалось распарсить, используем текущее время минус 1 час
+
         EntryTime := Time - (1 / 24);
       end;
 
-      // 3. Проверяем, что время выхода позже времени входа
+
       if ExitTime < EntryTime then
       begin
-        // Если клиент пришел вечером, а выходит утром (например, ночная тренировка)
-        // Добавляем 1 день
+
         ExitTime := ExitTime + 1;
       end;
 
-      // 4. Рассчитываем длительность в минутах
+
       DurationMinutes := Round((ExitTime - EntryTime) * 24 * 60);
 
-      // Проверяем корректность расчета
+
       if DurationMinutes < 0 then
         DurationMinutes := 0;
       if DurationMinutes > 1440 then
-        DurationMinutes := 1440; // Максимум 24 часа
+        DurationMinutes := 1440;
 
-      // 5. Обновляем запись в базе данных
       Query.SQL.Text := 'UPDATE visits ' + 'SET exit_time = :exit_time, ' +
         'duration_minutes = :duration ' + 'WHERE id = :id';
 
@@ -1092,7 +1083,7 @@ begin
 
       Query.ExecSQL;
 
-      // 6. Показываем информацию пользователю
+
       ShowMessage('✅ Выход успешно зарегистрирован!' + sLineBreak + 'Клиент: ' +
         FDQueryVisits.FieldByName('full_name').AsString + sLineBreak +
         'Время входа: ' + FormatDateTime('hh:nn:ss', EntryTime) + sLineBreak +
@@ -1101,7 +1092,7 @@ begin
         sLineBreak + '    (' + FormatFloat('0.0', DurationMinutes / 60) +
         ' часов)');
 
-      // 7. Обновляем список посещений
+
       LoadVisits;
 
     finally
@@ -1128,7 +1119,7 @@ begin
   ShowClientsReport;
 end;
 
-// Отчет по абонементам
+
 procedure TformMain.mnSubscriptionsReportClick(Sender: TObject);
 begin
   if not DB.IsConnected then
@@ -1139,7 +1130,7 @@ begin
   ShowSubscriptionsReport;
 end;
 
-// Отчет по посещениям
+
 procedure TformMain.mnVisitsReportClick(Sender: TObject);
 begin
   if not DB.IsConnected then
@@ -1150,7 +1141,7 @@ begin
   ShowVisitsReport;
 end;
 
-// Отчет по тренерам
+
 procedure TformMain.mnTrainerReportClick(Sender: TObject);
 begin
   if not DB.IsConnected then
@@ -1161,7 +1152,7 @@ begin
   ShowTrainerReport;
 end;
 
-// Экспорт в Excel
+
 procedure TformMain.mnExportExcelClick(Sender: TObject);
 begin
   if not DB.IsConnected then
@@ -1217,14 +1208,14 @@ begin
 
  if Trim(FSearchText) <> '' then
   begin
-    // Переводим в ВЕРХНИЙ РЕГИСТР (работает и с русскими буквами!)
+
     SearchText := AnsiUpperCase(Trim(FSearchText));
     SearchText := StringReplace(SearchText, '''', '''''', [rfReplaceAll]);
 
     case FSearchField of
-      0: FilterExpr := 'UPPER(full_name) LIKE ''%' + SearchText + '%''';   // ФИО
-      1: FilterExpr := 'UPPER(phone) LIKE ''%' + SearchText + '%''';       // Телефон
-      2: FilterExpr := 'UPPER(email) LIKE ''%' + SearchText + '%''';       // Email
+      0: FilterExpr := 'UPPER(full_name) LIKE ''%' + SearchText + '%''';
+      1: FilterExpr := 'UPPER(phone) LIKE ''%' + SearchText + '%''';
+      2: FilterExpr := 'UPPER(email) LIKE ''%' + SearchText + '%''';
     else
       FilterExpr := 'UPPER(full_name) LIKE ''%' + SearchText + '%''';
     end;
@@ -1245,16 +1236,6 @@ begin
     StatusBar1.Panels[1].Text := 'Клиентов: ' + IntToStr(FDQueryClients.RecordCount);
   end;
 end;
-// procedure TformMain.LoadSubscriptions;
-// begin
-//
-// end;
-//
-//
-// procedure TformMain.LoadVisits;
-// begin
-//
-// end;
 
 function TformMain.GetTodayVisitsCount: Integer;
 var
@@ -1306,14 +1287,14 @@ begin
     Exit;
   end;
 
-  // Получаем данные
+
   ClientCount := FDQueryClients.RecordCount;
   SubCount := FDQuerySubscriptions.RecordCount;
   VisitCount := FDQueryVisits.RecordCount;
   TodayVisits := GetTodayVisitsCount;
   ActiveSubs := GetActiveSubscriptionsCount;
 
-  // Обновляем панели
+
   StatusBar1.Panels[0].Text := Format('🟢 БД: %s', [ExtractFileName(FDBPath)]);
   StatusBar1.Panels[1].Text := Format('👥 Клиенты: %d | 📋 Абонементы: %d (актив: %d)',
     [ClientCount, SubCount, ActiveSubs]);
@@ -1323,12 +1304,12 @@ end;
 
 procedure TformMain.SetupToolbarButtons;
 begin
-  // Настройка панели
+
   PanelToolbar.Color := clWhite;
   PanelToolbar.Height := 48;
   PanelToolbar.BevelOuter := bvNone;
 
-  // Настройка кнопок
+
   btnNewClient.Caption := '➕ Новый клиент';
   btnNewClient.Hint := 'Добавить нового клиента (F2)';
   btnNewClient.ShowHint := True;
@@ -1347,7 +1328,7 @@ begin
 
 
 end;
-// ========== ГОРЯЧИЕ КЛАВИШИ ==========
+
 
 procedure TformMain.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin

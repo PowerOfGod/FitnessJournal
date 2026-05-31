@@ -81,7 +81,7 @@ begin
   if not Grid.DataSource.DataSet.Active then Exit;
   if Grid.Columns.Count = 0 then Exit;
 
-  // Подсчитываем только видимые колонки
+
   VisibleCols := 0;
   for i := 0 to Grid.Columns.Count - 1 do
     if Grid.Columns[i].Visible then
@@ -89,18 +89,18 @@ begin
 
   if VisibleCols = 0 then Exit;
 
-  // Получаем доступную ширину (минус полоса прокрутки)
+
   TotalWidth := Grid.ClientWidth - 25;
   if TotalWidth < 100 then Exit;
 
-  // Равномерно распределяем ширину
+
   ColWidth := TotalWidth div VisibleCols;
 
-  // Ограничиваем ширину
+
   if ColWidth < 80 then ColWidth := 80;
   if ColWidth > 300 then ColWidth := 300;
 
-  // Применяем ширину ко всем видимым колонкам
+
   for i := 0 to Grid.Columns.Count - 1 do
     if Grid.Columns[i].Visible then
       Grid.Columns[i].Width := ColWidth;
@@ -108,7 +108,7 @@ end;
 
 procedure TFrame1.FormResize(Sender: TObject);
 begin
-  // При изменении размера подстраиваем все таблицы
+
   AutoFitGridColumns(gridDaily);
   AutoFitGridColumns(gridTrainer);
   AutoFitGridColumns(gridHourly);
@@ -123,7 +123,7 @@ end;
 
 procedure TFrame1.Initialize;
 begin
-  // Заполняем список периодов
+
   cmbPeriod.Clear;
   cmbPeriod.Items.Add('Сегодня');
   cmbPeriod.Items.Add('Текущая неделя');
@@ -131,17 +131,17 @@ begin
   cmbPeriod.Items.Add('Текущий квартал');
   cmbPeriod.Items.Add('Текущий год');
   cmbPeriod.Items.Add('Произвольный период');
-  cmbPeriod.ItemIndex := 2; // Месяц по умолчанию
+  cmbPeriod.ItemIndex := 2;
 
   tabGeneral.Caption := 'Общая статистика';
   tabTrainer.Caption := 'По тренерам';
   tabHourly.Caption := 'По часам';
 
-  // Устанавливаем начальные даты
+
   dtpDateFrom.Date := StartOfTheMonth(Date);
   dtpDateTo.Date := Date;
 
-  // Настраиваем DataSource
+
   dsDaily.DataSet := qryDaily;
   gridDaily.DataSource := dsDaily;
   dsTrainer.DataSet := qryTrainer;
@@ -149,13 +149,13 @@ begin
   dsHourly.DataSet := qryHourly;
   gridHourly.DataSource := dsHourly;
 
-   // Настройка шрифтов как на других вкладках
-  // Memo для статистики
+
+
   MemoStats.Font.Name := 'Segoe UI';
   MemoStats.Font.Size := 11;
-  MemoStats.Color := 16777197;  // Светло-желтый фон
+  MemoStats.Color := 16777197;
 
-  // Таблица Общая статистика
+
   gridDaily.Font.Name := 'Segoe UI';
   gridDaily.Font.Size := 11;
   gridDaily.TitleFont.Name := 'Segoe UI';
@@ -163,7 +163,7 @@ begin
   gridDaily.TitleFont.Style := [fsBold];
   gridDaily.TitleFont.Color := clNavy;
 
-  // Таблица По тренерам
+
   gridTrainer.Font.Name := 'Segoe UI';
   gridTrainer.Font.Size := 11;
   gridTrainer.TitleFont.Name := 'Segoe UI';
@@ -171,7 +171,7 @@ begin
   gridTrainer.TitleFont.Style := [fsBold];
   gridTrainer.TitleFont.Color := clNavy;
 
-  // Таблица По часам
+
   gridHourly.Font.Name := 'Segoe UI';
   gridHourly.Font.Size := 11;
   gridHourly.TitleFont.Name := 'Segoe UI';
@@ -181,12 +181,12 @@ begin
 
 
 
-  // Настройка StatusBar
+
   StatusBar1.Panels[0].Text := 'Готов';
   StatusBar1.Panels[0].Width := 200;
   StatusBar1.Panels[1].Text := 'Всего: 0';
 
-  // Подключаем запросы к БД
+
   if DB.IsConnected then
   begin
     qryDaily.Connection := DB.GetConnection;
@@ -194,14 +194,14 @@ begin
     qryHourly.Connection := DB.GetConnection;
   end;
 
-  // Подключаем обработчик изменения размера
+
   Self.OnResize := FormResize;
 
-  // Настраиваем таймер (обновление каждые 5 минут)
+
   Timer1.Interval := 300000;
   Timer1.Enabled := True;
 
-  // Загружаем данные
+
   RefreshData;
 end;
 
@@ -225,7 +225,7 @@ begin
     StatusBar1.Panels[0].Text := Format('Период: %s - %s',
       [DateToStr(FDateFrom), DateToStr(FDateTo)]);
 
-    // Подстраиваем колонки после загрузки
+
     UpdateLayout;
   except
     on E: Exception do
@@ -252,13 +252,13 @@ begin
 
   try
     case cmbPeriod.ItemIndex of
-      0: // Сегодня
+      0:
         begin
           FDateFrom := Today;
           FDateTo := Today;
         end;
 
-      1: // Текущая неделя
+      1:
         begin
           DayOfWeekNum := DayOfWeek(Today);
           if DayOfWeekNum = 1 then
@@ -268,13 +268,13 @@ begin
           FDateTo := Today;
         end;
 
-      2: // Текущий месяц
+      2:
         begin
           FDateFrom := StartOfTheMonth(Today);
           FDateTo := Today;
         end;
 
-      3: // Текущий квартал
+      3:
         begin
           case MonthOf(Today) of
             1,2,3:  FDateFrom := EncodeDate(YearOf(Today), 1, 1);
@@ -285,13 +285,13 @@ begin
           FDateTo := Today;
         end;
 
-      4: // Текущий год
+      4:
         begin
           FDateFrom := EncodeDate(YearOf(Today), 1, 1);
           FDateTo := Today;
         end;
 
-      5: // Произвольный период
+      5:
         begin
           FDateFrom := dtpDateFrom.Date;
           FDateTo := dtpDateTo.Date;
@@ -335,7 +335,7 @@ begin
   qryDaily.ParamByName('date_to').AsDate := FDateTo;
   qryDaily.Open;
 
-  // Настройка заголовков и выравнивания
+
   if qryDaily.Active then
   begin
     qryDaily.FieldByName('visit_date').DisplayLabel := 'Дата';
@@ -343,7 +343,7 @@ begin
     qryDaily.FieldByName('unique_clients').DisplayLabel := 'Уникальных';
     qryDaily.FieldByName('total_minutes').DisplayLabel := 'Минут';
 
-    // Выравнивание по левому краю
+
     qryDaily.FieldByName('visit_count').Alignment := taLeftJustify;
     qryDaily.FieldByName('unique_clients').Alignment := taLeftJustify;
     qryDaily.FieldByName('total_minutes').Alignment := taLeftJustify;
@@ -424,7 +424,7 @@ begin
   TotalMinutes := 0;
   TotalUnique := 0;
 
-  // Проверка, что запрос активен и не пуст
+
   if not qryDaily.Active then
   begin
     StatusBar1.Panels[1].Text := 'Всего: 0';
@@ -447,7 +447,7 @@ begin
     qryDaily.First;
     while not qryDaily.Eof do
     begin
-      // Безопасное чтение с проверкой на NULL
+
       if not qryDaily.FieldByName('visit_count').IsNull then
         TotalVisits := TotalVisits + qryDaily.FieldByName('visit_count').AsInteger;
 
@@ -469,7 +469,7 @@ begin
     end;
   end;
 
-  // Заполнение MemoStats
+
   MemoStats.Clear;
   MemoStats.Lines.Add(StringOfChar('=', 50));
   MemoStats.Lines.Add('ИТОГОВАЯ СТАТИСТИКА');

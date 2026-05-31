@@ -63,7 +63,7 @@ begin
   try
     Query.Connection := DB.GetConnection;
 
-    // Обновляем membership_type у клиента
+
     Query.SQL.Text :=
       'UPDATE clients SET membership_type = :sub_type ' +
       'WHERE id = :client_id';
@@ -85,7 +85,7 @@ begin
   try
     Query.Connection := DB.GetConnection;
 
-    // Деактивируем все активные абонементы этого клиента, кроме нового
+
     Query.SQL.Text :=
       'UPDATE subscriptions SET is_active = 0 ' +
       'WHERE client_id = :client_id ' +
@@ -123,14 +123,14 @@ var
   OldSubscriptionType: string;
   Query: TFDQuery;
 begin
-  // 1. Проверка выбора клиента и типа
+
   if (cbType.ItemIndex < 0) or (cbClient.ItemIndex < 0) then
   begin
     ShowMessage('Выберите клиента и тип абонемента!');
     Exit;
   end;
 
-  // 2. Получаем ID клиента
+
   if cbClient.ItemIndex > 0 then
     FClientID := Integer(cbClient.Items.Objects[cbClient.ItemIndex])
   else
@@ -139,26 +139,26 @@ begin
     Exit;
   end;
 
-  // 3. Получаем данные из формы
+
   SubscriptionType := cbType.Text;
   StartDate := dtStartDate.Date;
   EndDate := dtEndDate.Date;
 
-  // Проверяем что цена - число
+
   if not TryStrToFloat(edtPrice.Text, Price) then
   begin
     ShowMessage('Неверный формат цены!');
     Exit;
   end;
 
-  // 4. Определяем количество посещений
+
   case cbType.ItemIndex of
-    0: // Разовый
+    0:
     begin
       VisitsCount := 1;
       RemainingVisits := 1;
     end;
-    1,2,3: // Месячный, Квартальный, Годовой - безлимит
+    1,2,3:
     begin
       VisitsCount := 0;
       RemainingVisits := 0;
@@ -168,7 +168,7 @@ begin
     RemainingVisits := 0;
   end;
 
-  // 5. ПРОВЕРЯЕМ, ЕСТЬ ЛИ УЖЕ АКТИВНЫЙ АБОНЕМЕНТ
+
   Query := TFDQuery.Create(nil);
   try
     Query.Connection := DB.GetConnection;
@@ -184,7 +184,7 @@ begin
       OldSubscriptionType := Query.FieldByName('subscription_type').AsString;
       Query.Close;
 
-      // СПРАШИВАЕМ, ЧТО ДЕЛАТЬ СО СТАРЫМ АБОНЕМЕНТОМ
+
       var Msg := 'У клиента уже есть активный абонемент:' + sLineBreak +
                  OldSubscriptionType + sLineBreak + sLineBreak +
                  'Что делать со старым абонементом?' + sLineBreak + sLineBreak +
@@ -197,7 +197,7 @@ begin
       case Res of
         mrYes:
           begin
-            // Просто запоминаем, что нужно деактивировать
+
             ShowMessage('Старый абонемент будет деактивирован');
           end;
         mrNo:
@@ -217,7 +217,7 @@ begin
     Query.Free;
   end;
 
-  // 6. ПОКАЗЫВАЕМ ПОДТВЕРЖДЕНИЕ
+
   var Msg := '⚠ ПОДТВЕРЖДЕНИЕ АБОНЕМЕНТА ⚠' + sLineBreak + sLineBreak +
              'Клиент: ' + cbClient.Text + sLineBreak +
              'Абонемент: ' + SubscriptionType + sLineBreak +
@@ -236,7 +236,7 @@ begin
     Exit;
   end;
 
-  // 7. Сохраняем в БД
+
   try
     FSubscriptionID := DB.AddSubscription(
       FClientID,
@@ -248,13 +248,13 @@ begin
       RemainingVisits
     );
 
-    // 8. Проверяем результат
+
     if FSubscriptionID > 0 then
     begin
-      // ДЕАКТИВИРУЕМ СТАРЫЕ АБОНЕМЕНТЫ
+
       DeactivateOldSubscriptions(FClientID, FSubscriptionID);
 
-      // ОБНОВЛЯЕМ ПОЛЕ membership_type У КЛИЕНТА
+
       UpdateClientMembershipType(FClientID, SubscriptionType);
 
       ShowMessage(
@@ -284,37 +284,6 @@ end;
 procedure TfrmSubscriptionEdit1.cbTypeChange(Sender: TObject);
 begin
 
-
-//  case cbType.ItemIndex of
-//    0:begin
-//           dtEndDate.Date := Date + 1;
-//           edtPrice.Text := '500';
-////        edtSubscription.Text := 'Месячный (до 31.01.2024)';
-//      end;
-//    1:begin
-//          dtEndDate.Date := Date + 30;
-//          edtPrice.Text := '3000';
-////        edtPhone.Text := '+7 999 222-33-44';
-////        edtSubscription.Text := 'Разовый';
-//      end;
-//
-//    2:begin
-//          dtEndDate.Date := Date + 90;
-//          edtPrice.Text := '8000';
-////        edtPhone.Text := '+7 999 333-44-55';
-////        edtSubscription.Text := 'Годовой (до 31.12.2024)';
-//      end;
-//    3:begin
-//          dtEndDate.Date := Date + 365;
-//          edtPrice.Text := '25000';
-////        edtPhone.Text := '+7 999 333-44-55';
-////        edtSubscription.Text := 'Годовой (до 31.12.2024)';
-//      end;
-//
-//  end;
-
-//    FClientID  := cbClient.ItemIndex + 1;
-
 CalculateEndDate;
   UpdatePrice;
 
@@ -326,11 +295,11 @@ begin
   FClientID := 0;
   FSubscriptionID := 0;
 
-  // Настраиваем поле цены
+
   edtPrice.ReadOnly := True;
   edtPrice.Color := clBtnFace;
 
-  // Заполняем типы абонементов
+
   cbType.Items.Clear;
   cbType.Items.Add('Разовый');
   cbType.Items.Add('Месячный');
@@ -338,10 +307,10 @@ begin
   cbType.Items.Add('Годовой');
   cbType.ItemIndex := 0;
 
-  // Загружаем клиентов
+
   LoadClientsFromDB;
 
-  // Устанавливаем начальную дату
+
   dtStartDate.Date := Date;
   CalculateEndDate;
   UpdatePrice;
@@ -407,7 +376,7 @@ procedure TfrmSubscriptionEdit1.CalculateEndDate;
 begin
   if cbType.ItemIndex < 0 then Exit;
 
-  // Используем массив длительностей
+
   if (cbType.ItemIndex >= 0) and (cbType.ItemIndex <= High(SubscriptionDurations)) then
   begin
     dtEndDate.Date := dtStartDate.Date + SubscriptionDurations[cbType.ItemIndex];
@@ -426,7 +395,7 @@ begin
     Exit;
   end;
 
-  // Используем массив цен
+
   if (cbType.ItemIndex >= 0) and (cbType.ItemIndex <= High(SubscriptionPrices)) then
   begin
     edtPrice.Text := FormatFloat('0', SubscriptionPrices[cbType.ItemIndex]);

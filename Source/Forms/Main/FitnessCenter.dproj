@@ -129,31 +129,26 @@
         </DelphiCompile>
         <DCCReference Include="..\..\Core\AppConsts.pas"/>
         <DCCReference Include="..\Clients\frmClientEdit.pas">
-            <Form>frmClientEdit1</Form>
+            <Form>,
+  frmVisitEdit in &apos;..\Visits\frmVisitEdit.pas&apos; ,
+  frmSubscriptionEdit in &apos;..\Subscriptions\frmSubscriptionEdit.pas&apos;,
+  DBModule in &apos;..\..\Database\DBModule.pas&apos;,
+  frmMain in &apos;frmMain.pas&apos; {formMain</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="..\Visits\frmVisitEdit.pas">
-            <Form>frmVisitEdit1</Form>
-            <FormType>dfm</FormType>
-        </DCCReference>
-        <DCCReference Include="..\Subscriptions\frmSubscriptionEdit.pas">
-            <Form>frmSubscriptionEdit1</Form>
-            <FormType>dfm</FormType>
-        </DCCReference>
+        <DCCReference Include="..\Visits\frmVisitEdit.pas"/>
+        <DCCReference Include="..\Subscriptions\frmSubscriptionEdit.pas"/>
         <DCCReference Include="..\..\Database\DBModule.pas"/>
         <DCCReference Include="frmMain.pas">
             <Form>formMain</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="..\statistics\frameStatistics.pas">
             <Form>Frame1</Form>
-            <FormType>dfm</FormType>
             <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <DCCReference Include="..\..\Core\uUIStyles.pas"/>
         <DCCReference Include="frmSplash.pas">
             <Form>Form1</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>

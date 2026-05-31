@@ -63,7 +63,6 @@ begin
   FIsConnected := False;
   FDBPath := '';
 
-  // Создаем компоненты
   FDriverLink := TFDPhysSQLiteDriverLink.Create(nil);
   FConnection := TFDConnection.Create(nil);
 
@@ -107,7 +106,7 @@ begin
   try
     Query.Connection := FConnection;
 
-    // Простой подсчет
+
   Query.SQL.Text :=
   'SELECT COUNT(*) as cnt FROM visits ' +
   'WHERE client_id = :client_id ' +
@@ -117,7 +116,6 @@ begin
     Query.Open;
 
     Count := Query.FieldByName('cnt').AsInteger;
-    ShowMessage(IntToStr(Count));
     if Count > 0 then
     begin
       Result := True;
@@ -147,12 +145,12 @@ begin
   try
     Query.Connection := FConnection;
 
-    // Проверяем существование активного клиента
+
     Query.SQL.Text := 'SELECT 1 FROM clients WHERE id = :id AND is_active = 1';
     Query.ParamByName('id').AsInteger := ClientID;
     Query.Open;
 
-    Result := not Query.Eof; // Если запись найдена - клиент существует
+    Result := not Query.Eof;
     Query.Close;
 
   finally
@@ -165,15 +163,15 @@ begin
   Result := False;
 
   try
-    // Проверяем существование файла БД
+
     if not FileExists(DBPath) then
       raise Exception.Create('Файл базы данных не найден!' + #13#10 + 'Путь: ' + DBPath);
 
-    // Отключаемся, если уже подключены
+
     if FConnection.Connected then
       FConnection.Connected := False;
 
-    // Устанавливаем путь и подключаемся
+
     FConnection.Params.Values['Database'] := DBPath;
     FConnection.Connected := True;
 
@@ -299,7 +297,7 @@ function TDBModule.AddClient(fullName: string;
 var
   Query: TFDQuery;
 begin
-  Result := -1;  // По умолчанию ошибка
+  Result := -1;
 
   if not FIsConnected then
     raise Exception.Create('Нет подключения к базе данных');
@@ -308,7 +306,7 @@ begin
   try
     Query.Connection := FConnection;
 
-    // ВАЖНО: Начинаем транзакцию
+
     if not FConnection.InTransaction then
       FConnection.StartTransaction;
 
@@ -332,7 +330,7 @@ begin
         '  :birth_date' +
         ')';
 
-      // Используем AsDateTime для дат
+
       Query.ParamByName('full_name').AsString := fullName;
       Query.ParamByName('email').AsString := email;
       Query.ParamByName('membership_type').AsString := membershipType;
@@ -343,7 +341,7 @@ begin
 
       Query.ExecSQL;
 
-      // Получаем ID новой записи
+
       Query.SQL.Text := 'SELECT last_insert_rowid() as new_id';
       Query.Open;
 
@@ -352,14 +350,14 @@ begin
 
       Query.Close;
 
-      // ВАЖНО: Коммитим транзакцию
+
       if FConnection.InTransaction then
         FConnection.Commit;
 
     except
       on E: Exception do
       begin
-        // Откатываем при ошибке
+
         if FConnection.InTransaction then
           FConnection.Rollback;
         raise;
@@ -367,7 +365,7 @@ begin
     end;
 
   finally
-    Query.Free;  // ← Освобождаем Query в любом случае
+    Query.Free;
   end;
 end;
 
@@ -411,7 +409,7 @@ begin
 
 
       Query.ParamByName('client_id').AsInteger := ClientID;
-      Query.ParamByName('price').AsCurrency := Price;  // Лучше AsCurrency для денег
+      Query.ParamByName('price').AsCurrency := Price;
       Query.ParamByName('subscription_type').AsString := SubscriptionType;
       Query.ParamByName('start_date').AsDate := StartDate;
       Query.ParamByName('end_date').AsDate := EndDate;
@@ -439,15 +437,15 @@ var
 begin
   Result := -1;
 
-  // 1. Проверка подключения к БД
+
   if not FIsConnected then
     raise Exception.Create('Нет подключения к базе данных');
 
-  // 2. Проверка существования клиента (ДОБАВЛЕНО!)
+
   if not ClientExists(ClientID) then
     raise Exception.Create('Клиент с ID=' + IntToStr(ClientID) + ' не найден или не активен');
 
-  // 3. Проверка входных данных
+
   if ClientID <= 0 then
     raise Exception.Create('Неверный ID клиента');
 
@@ -465,23 +463,23 @@ begin
     try
       Query.Connection := FConnection;
 
-      // 4. Вычисляем длительность посещения (если exit_time задан)
+
       if ExitTime > 0 then
       begin
-        // Проверяем, что время выхода позже времени входа
+
         if ExitTime < EntryTime then
           raise Exception.Create('Время выхода не может быть раньше времени входа');
 
-        // Вычисляем разницу в минутах
+
         DurationMinutes := Round((ExitTime - EntryTime) * 24 * 60);
       end
       else
       begin
-        // Клиент еще не вышел - длительность = 0
+
         DurationMinutes := 0;
       end;
 
-      // 5. Формируем SQL запрос
+
       Query.SQL.Text :=
         'INSERT INTO visits (' +
         'client_id, visit_date, entry_time, ' +
@@ -491,15 +489,15 @@ begin
         ':exit_time, :duration_minutes, :trainer_name, :notes' +
         ')';
 
-      // 6. Устанавливаем параметры
+
       Query.ParamByName('client_id').AsInteger := ClientID;
       Query.ParamByName('visit_date').AsDate := VisitDate;
 
-      // Время храним как строку в формате "HH:MM:SS"
+
       Query.ParamByName('entry_time').AsString :=
         FormatDateTime('hh:nn:ss', EntryTime);
 
-      // Обработка exit_time: если 0, то NULL (клиент еще не вышел)
+
       if ExitTime > 0 then
   Query.ParamByName('exit_time').AsString := FormatDateTime('hh:nn:ss', ExitTime)
 else  Query.ParamByName('exit_time').AsString := '';
@@ -512,24 +510,24 @@ else  Query.ParamByName('exit_time').AsString := '';
       Query.ParamByName('trainer_name').AsString := TrainerName;
       Query.ParamByName('notes').AsString := Notes;
 
-      // 7. Выполняем запрос
+
       Query.ExecSQL;
 
-      // 8. Получаем ID добавленной записи
+
       Query.SQL.Text := 'SELECT last_insert_rowid() as new_id';
       Query.Open;
 
       if not Query.Eof then
         Result := Query.FieldByName('new_id').AsInteger
       else
-        Result := -1; // Не удалось получить ID
+        Result := -1;
 
       Query.Close;
 
     except
       on E: Exception do
       begin
-        // Логируем ошибку (можно добавить запись в лог)
+
         raise Exception.Create('Ошибка при добавлении посещения: ' + E.Message);
       end;
     end;
@@ -555,7 +553,7 @@ begin
   try
     Query.Connection := FConnection;
 
-    // 1. Получаем время входа для этого посещения
+
     Query.SQL.Text := 'SELECT entry_time FROM visits WHERE id = :id';
     Query.ParamByName('id').AsInteger := VisitID;
     Query.Open;
@@ -569,21 +567,20 @@ begin
     EntryTimeStr := Query.FieldByName('entry_time').AsString;
     Query.Close;
 
-    // 2. Преобразуем строку времени в TTime
-    // Предполагаем формат "HH:MM:SS"
+
     EntryTime := StrToTime(EntryTimeStr);
 
-    // 3. Проверяем, что время выхода позже времени входа
+
     if ExitTime <= EntryTime then
     begin
       ShowMessage('Время выхода должно быть позже времени входа');
       Exit;
     end;
 
-    // 4. Вычисляем длительность в минутах
-    Duration := (ExitTime - EntryTime) * 24 * 60; // в минутах
 
-    // 5. Обновляем запись посещения
+    Duration := (ExitTime - EntryTime) * 24 * 60;
+
+
     Query.SQL.Text :=
       'UPDATE visits SET ' +
       'exit_time = :exit_time, ' +
@@ -641,14 +638,14 @@ begin
     raise Exception.Create('Неверный ID клиента');
 
   Query := TFDQuery.Create(nil);
-  try  // Внешний try..finally для освобождения Query
+  try
     Query.Connection := FConnection;
 
-    // Начинаем транзакцию
+
     if not FConnection.InTransaction then
       FConnection.StartTransaction;
 
-    try  // Внутренний try..except для обработки ошибок БД
+    try
       Query.SQL.Text :=
         'UPDATE clients SET ' +
         'full_name = :full_name, ' +
@@ -669,24 +666,24 @@ begin
 
       Result := Query.RowsAffected > 0;
 
-      // Фиксируем транзакцию
+
       if FConnection.InTransaction then
         FConnection.Commit;
 
     except
       on E: Exception do
       begin
-        // Откатываем при ошибке
+
         if FConnection.InTransaction then
           FConnection.Rollback;
 
-        // Пробрасываем ошибку дальше
+
         raise Exception.Create('Ошибка обновления клиента: ' + E.Message);
       end;
-    end;  // Конец внутреннего try..except
+    end;
 
   finally
-    Query.Free;  // Освобождаем Query в любом случае
+    Query.Free;
   end;
 end;
 

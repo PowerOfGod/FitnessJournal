@@ -8,16 +8,15 @@ uses
   Vcl.StdCtrls;
 
 type
-  TForm1 = class(TForm)   // ← оставляем TForm1 (как у вас в форме)
+  TForm1 = class(TForm)
     ImageLogo: TImage;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
     Timer1: TTimer;
     procedure FormCreate(Sender: TObject);
-    procedure FormShow(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
-    procedure FormClick(Sender: TObject);   // ← ДОБАВИТЬ для закрытия по клику
+    procedure FormClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -33,7 +32,7 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
-  // Настройка текста по центру
+
   Label1.Left := 0;
   Label1.Width := ClientWidth;
   Label1.Alignment := taCenter;
@@ -46,14 +45,9 @@ begin
   Label3.Width := ClientWidth;
   Label3.Alignment := taCenter;
 
-  // Включаем таймер при создании формы
-  Timer1.Interval := 2000;
-  Timer1.Enabled := True;   // ← ВКЛЮЧАЕМ ТАЙМЕР
-end;
 
-procedure TForm1.FormShow(Sender: TObject);   // ← TForm1, не TfrmSplash
-begin
-//  Timer1.Enabled := True;   // включаем таймер при показе формы
+  Timer1.Interval := 2000;
+  Timer1.Enabled := True;
 end;
 
 procedure TForm1.Timer1Timer(Sender: TObject);
@@ -62,9 +56,9 @@ begin
   Close;
 end;
 
-procedure TForm1.FormClick(Sender: TObject);   // ← ДОБАВИТЬ
+procedure TForm1.FormClick(Sender: TObject);
 begin
-  // По клику на заставку - сразу закрываем
+
   Timer1.Enabled := False;
   Close;
 end;
